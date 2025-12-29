@@ -1,0 +1,54 @@
+[
+  {
+    "title": "A Minor Pentatonic (Pos 1)",
+    "category": "scale",
+    "bpm": 100,
+    "key": "A",
+    "generator": {
+      "root": "A",
+      "scale": "minor_pentatonic",
+      "start_fret": 5,
+      "end_fret": 8,
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "C Major Scale (Open Position)",
+    "category": "scale",
+    "bpm": 80,
+    "key": "C",
+    "generator": {
+      "root": "C",
+      "scale": "major",
+      "start_fret": 0,
+      "end_fret": 3,
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "G Major Pentatonic (Pos 1)",
+    "category": "scale",
+    "bpm": 90,
+    "key": "G",
+    "generator": {
+      "root": "G",
+      "scale": "major_pentatonic",
+      "start_fret": 3,
+      "end_fret": 5,
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "E Blues Scale (Open)",
+    "category": "blues",
+    "bpm": 110,
+    "key": "E",
+    "generator": {
+      "root": "E",
+      "scale": "blues",
+      "start_fret": 0,
+      "end_fret": 3,
+      "direction": "ascending"
+    }
+  }
+]
