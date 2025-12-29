@@ -45,17 +45,20 @@ type Model struct {
 	tuning          []theory.Note
 	width, height   int
 	fretCount       int
-	showAll         bool
-	showFingers     bool
-	metronomeActive bool // Bấm Space để chạy/dừng
+	metronomeActive bool
+
+	// Display Modes
+	showAll        bool // Tab Mode (Note Names) - Phím Tab
+	showFingers    bool // Finger Helper Mode - Phím H
+	showScaleShape bool // Sequence/Shape Mode - Phím S
 }
 
 func NewModel() Model {
 	// 1. Load Data
 	loadedLessons, err := lesson.LoadLessons("lessons.json")
 	if err != nil {
-		fmt.Println("Lỗi load lessons.json (Tạo file chưa tml?):", err)
-		loadedLessons = []lesson.Lesson{} // Empty fallback
+		fmt.Println("Lỗi load lessons.json:", err)
+		loadedLessons = []lesson.Lesson{}
 	}
 
 	// 2. Setup List Component
@@ -64,7 +67,7 @@ func NewModel() Model {
 		items = append(items, item{lesson: l})
 	}
 
-	// Custom Delegate để hiển thị list đẹp kiểu Catppuccin
+	// Custom Delegate hiển thị list kiểu Catppuccin
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
 		Foreground(theory.CatRed).
@@ -79,11 +82,11 @@ func NewModel() Model {
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = lipgloss.NewStyle().Foreground(theory.CatMauve).Bold(true).Padding(0, 1)
 
-	// 3. Default Lesson (Bài đầu tiên)
+	// 3. Default Lesson
 	firstLesson := lesson.Lesson{}
 	if len(loadedLessons) > 0 {
 		firstLesson = loadedLessons[0]
-		// Cần generate steps cho bài đầu tiên ngay
+		// Generate Steps ngay nếu có Generator
 		if firstLesson.Generator != nil {
 			firstLesson.Steps, _ = lesson.GenerateSteps(firstLesson.Generator)
 		}
@@ -95,13 +98,17 @@ func NewModel() Model {
 		list:            l,
 		tuning:          theory.StandardTuning,
 		fretCount:       12,
-		metronomeActive: false, // Mặc định dừng
-		showFingers:     true,  // Mặc định hiện Nốt
+		metronomeActive: false,
+
+		// Default States
+		showAll:        false,
+		showFingers:    false,
+		showScaleShape: false,
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return nil // Chưa chạy metronome vội
+	return nil
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -115,16 +122,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "f":
-			m.fretCount = 36 - m.fretCount // Toggle 12 <-> 24 (Trick: 12->24, 24->12)
+			// Toggle 12 <-> 24
+			m.fretCount = 36 - m.fretCount
 			if m.fretCount != 24 {
 				m.fretCount = 12
-			} // Safety
+			}
 
 		case "tab":
 			m.showAll = !m.showAll
+			// Nếu bật Tab (Note names) thì tắt Shape đi cho đỡ loạn
+			if m.showAll {
+				m.showScaleShape = false
+			}
 
-		case "h", "H": // <--- THÊM CASE NÀY
+		case "h", "H":
 			m.showFingers = !m.showFingers
+
+		case "s", "S":
+			m.showScaleShape = !m.showScaleShape
+			// Nếu bật Shape (Sequence) thì tắt Tab đi
+			if m.showScaleShape {
+				m.showAll = false
+			}
 
 		case " ": // Space: Toggle Play/Pause
 			m.metronomeActive = !m.metronomeActive
@@ -132,7 +151,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, tick(m.currentLesson.BPM))
 			}
 
-		case "enter": // Chọn bài từ list
+		case "enter": // Chọn bài
 			if selectedItem, ok := m.list.SelectedItem().(item); ok {
 				m.currentLesson = selectedItem.lesson
 
@@ -144,12 +163,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 
-				// Reset trạng thái
+				// Reset
 				m.currentStep = 0
 
-				// --- BUG FIX START ---
-				// Kiểm tra: Chỉ start tick mới nếu trước đó nó ĐANG DỪNG.
-				// Nếu đang chạy rồi thì thôi, để cái loop cũ nó tự handle bài mới.
+				// FIX BUG TĂNG TỐC ĐỘ: Chỉ start tick mới nếu đang dừng
 				if !m.metronomeActive {
 					m.metronomeActive = true
 					cmds = append(cmds, tick(m.currentLesson.BPM))
@@ -161,12 +178,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-		// Resize List: Nằm bên phải Circle
+		// Resize List
 		listWidth := msg.Width - circleWidth - 4
 		if listWidth < 20 {
 			listWidth = 20
 		}
-		listHeight := circleHeight - listHeaderHeight // Khớp chiều cao với Circle
+		listHeight := circleHeight - listHeaderHeight
 
 		m.list.SetWidth(listWidth)
 		m.list.SetHeight(listHeight)
@@ -178,7 +195,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// Update List Component (để nó xử lý phím lên xuống)
+	// Update List
 	m.list, cmd = m.list.Update(msg)
 	cmds = append(cmds, cmd)
 
@@ -188,57 +205,53 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	if m.width == 0 {
 		return "Loading..."
-	} // Chờ WindowSizeMsg
-
-	// --- 1. TOP SECTION (Circle | List) ---
-
-	// Circle
-	rawCircle := strings.TrimSuffix(components.RenderCircle(m.currentLesson.ActualKey), "\n")
-	circleBox := lipgloss.NewStyle().
-		Width(circleWidth).
-		Height(circleHeight).
-		Align(lipgloss.Center, lipgloss.Center).
-		Border(lipgloss.NormalBorder(), false, true, false, false). // Border phải
-		BorderForeground(theory.CatOverlay1).
-		Render(rawCircle)
-
-	// List
-	listBox := lipgloss.NewStyle().
-		PaddingLeft(1).
-		Render(m.list.View())
-
-	topSection := lipgloss.JoinHorizontal(lipgloss.Top, circleBox, listBox)
-
-	// Container Top
-	topContainer := lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder(), false, false, true, false). // Border dưới
-		BorderForeground(theory.CatOverlay1).
-		Width(m.width).
-		Render(topSection)
-
-	// --- 2. BOTTOM SECTION (Fretboard + Metronome) ---
-
-	// Prepare Props
-	var activeMarkers []lesson.Marker
-	if len(m.currentLesson.Steps) > 0 {
-		activeMarkers = m.currentLesson.Steps[m.currentStep].Markers
 	}
 
-	// Upcoming Logic
+	steps := m.currentLesson.Steps
+
+	// --- 1. PREPARE FRETBOARD PROPS ---
+
+	// A. Active Items (Thêm Order cho Mode S nháy)
+	var activeItems []components.ActiveItem
+	if len(steps) > 0 {
+		markers := steps[m.currentStep].Markers
+		for _, marker := range markers {
+			activeItems = append(activeItems, components.ActiveItem{
+				Marker: marker,
+				Order:  m.currentStep + 1, // 1-based index
+			})
+		}
+	}
+
+	// B. Upcoming Markers (Lookahead 3 bước)
 	upcoming := make(map[string]components.UpcomingItem)
 	lookAhead := 3
-
-	if len(m.currentLesson.Steps) > 0 {
+	if len(steps) > 0 {
 		for i := 1; i <= lookAhead; i++ {
-			nextIdx := (m.currentStep + i) % len(m.currentLesson.Steps)
-			for _, marker := range m.currentLesson.Steps[nextIdx].Markers {
+			nextIdx := (m.currentStep + i) % len(steps)
+			for _, marker := range steps[nextIdx].Markers {
 				key := fmt.Sprintf("%d_%d", marker.StringIndex, marker.Fret)
-
-				// Chỉ lưu thằng đầu tiên tìm thấy (gần nhất)
 				if _, exists := upcoming[key]; !exists {
 					upcoming[key] = components.UpcomingItem{
 						Distance: i,
-						Finger:   marker.Finger, // <--- LẤY FINGER TỪ MARKER
+						Finger:   marker.Finger,
+					}
+				}
+			}
+		}
+	}
+
+	// C. Scale Sequence (Map toàn bộ nốt trong bài để vẽ Layer 0 Mode S)
+	scaleSequence := make(map[string]components.SequenceItem)
+	if m.showScaleShape && len(steps) > 0 {
+		for i, step := range steps {
+			for _, marker := range step.Markers {
+				key := fmt.Sprintf("%d_%d", marker.StringIndex, marker.Fret)
+				// Chỉ lưu lần xuất hiện đầu tiên
+				if _, exists := scaleSequence[key]; !exists {
+					scaleSequence[key] = components.SequenceItem{
+						Order:  i + 1,
+						Finger: marker.Finger,
 					}
 				}
 			}
@@ -246,40 +259,62 @@ func (m Model) View() string {
 	}
 
 	fretProps := components.FretboardProps{
-		ActiveMarkers:   activeMarkers,
+		ActiveItems:     activeItems,
 		UpcomingMarkers: upcoming,
+		ScaleSequence:   scaleSequence,
 		Tuning:          m.tuning,
 		ScaleConfig:     m.currentLesson.Generator,
 		ShowAll:         m.showAll,
 		FretCount:       m.fretCount,
 		ShowFingers:     m.showFingers,
+		ShowScaleShape:  m.showScaleShape,
 	}
 
-	// Render Components
+	// --- 2. RENDER COMPONENTS ---
+
+	// Top Section: Circle + List
+	rawCircle := strings.TrimSuffix(components.RenderCircle(m.currentLesson.ActualKey), "\n")
+	circleBox := lipgloss.NewStyle().
+		Width(circleWidth).
+		Height(circleHeight).
+		Align(lipgloss.Center, lipgloss.Center).
+		Border(lipgloss.NormalBorder(), false, true, false, false).
+		BorderForeground(theory.CatOverlay1).
+		Render(rawCircle)
+
+	listBox := lipgloss.NewStyle().
+		PaddingLeft(1).
+		Render(m.list.View())
+
+	topSection := lipgloss.JoinHorizontal(lipgloss.Top, circleBox, listBox)
+	topContainer := lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder(), false, false, true, false).
+		BorderForeground(theory.CatOverlay1).
+		Width(m.width).
+		Render(topSection)
+
+	// Bottom Section: Fretboard + Metronome
 	fretboardView := components.RenderFretboard(fretProps)
 
-	// Tính total beats để vẽ metronome (Giả sử 4/4 hoặc đếm theo steps)
-	// Để đơn giản, vẽ 4 cục đại diện cho nhịp điệu, active cái (currentStep % 4)
+	// Metronome (4 beat pattern)
 	metroView := components.RenderMetronome(m.currentStep%4, 4, m.currentLesson.BPM)
 
+	// Status Bar
 	playStatus := "Play "
 	if m.metronomeActive {
 		playStatus = "Pause"
 	}
-
-	helpText := fmt.Sprintf("[Space] %s  [H] Fingers(%v)  [F] Fret(%d)  [Tab] Scale",
-		playStatus, m.showFingers, m.fretCount)
-
+	helpText := fmt.Sprintf("[Space] %s  [H] Fing(%s)  [S] Seq(%s)  [Tab] Note(%s)  [F] Fret(%d)",
+		playStatus, status(m.showFingers), status(m.showScaleShape), status(m.showAll), m.fretCount)
 	helpView := lipgloss.NewStyle().Foreground(theory.CatSubtext1).Render(helpText)
 
-	// Info Bar
 	infoBar := lipgloss.NewStyle().
 		Foreground(theory.CatSky).Bold(true).
-		Render(fmt.Sprintf("PLAYING: %s", m.currentLesson.Title))
+		Render(fmt.Sprintf("PLAYING: %s (Step %d/%d)", m.currentLesson.Title, m.currentStep+1, len(steps)))
 
 	bottomSection := lipgloss.JoinVertical(lipgloss.Left,
 		lipgloss.NewStyle().Padding(0, 1).Render(infoBar),
-		lipgloss.NewStyle().Render(fretboardView), // Sát border trên
+		lipgloss.NewStyle().Render(fretboardView),
 		lipgloss.JoinHorizontal(lipgloss.Top,
 			lipgloss.NewStyle().PaddingLeft(2).Render(metroView),
 			lipgloss.NewStyle().PaddingLeft(4).Render(helpView),
@@ -293,4 +328,11 @@ func tick(bpm int) tea.Cmd {
 	return tea.Tick(time.Duration(60000/bpm)*time.Millisecond, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})
+}
+
+func status(b bool) string {
+	if b {
+		return "ON"
+	}
+	return "off"
 }

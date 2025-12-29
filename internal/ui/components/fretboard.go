@@ -10,36 +10,35 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// --- STYLES ---
+// --- STYLES (Giữ nguyên) ---
 var (
-	fretLineStyle = lipgloss.NewStyle().Foreground(theory.CatOverlay1)
-	nutStyle      = lipgloss.NewStyle().Foreground(theory.CatText).Bold(true)
+	fretLineStyle    = lipgloss.NewStyle().Foreground(theory.CatOverlay1)
+	nutStyle         = lipgloss.NewStyle().Foreground(theory.CatText).Bold(true)
+	upcomingPatterns = []string{" ● ", " : ", " ∴ "}
 
-	// Active Note Styles (Giữ nguyên)
-	activeNoteStyle       = lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatPeach)
+	activeNoteStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(theory.CatCrust).
+			Background(theory.CatPeach)
 	activeOpenStringStyle = activeNoteStyle.Copy().Background(theory.CatRed)
 
-	// Finger Backgrounds (Cho Active Note)
-	fingerStyles = map[int]lipgloss.Style{
-		0: activeOpenStringStyle,
-		1: activeNoteStyle.Copy().Background(theory.CatTeal),
-		2: activeNoteStyle.Copy().Background(theory.CatYellow),
-		3: activeNoteStyle.Copy().Background(theory.CatPeach),
-		4: activeNoteStyle.Copy().Background(theory.CatRed),
+	// Styles Ngón Tay (Background màu, Chữ đen)
+	fingerBgStyles = map[int]lipgloss.Style{
+		0: lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatRed),
+		1: lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatTeal),
+		2: lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatYellow),
+		3: lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatPeach),
+		4: lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatRed),
 	}
 
-	// --- NEW: FINGER FOREGROUNDS (Cho Upcoming Patterns) ---
-	// Chỉ tô màu chữ, không tô nền
+	// Styles Ngón Tay Đảo Ngược (Background tối, Chữ màu)
 	fingerFgStyles = map[int]lipgloss.Style{
-		0: lipgloss.NewStyle().Foreground(theory.CatText),   // Open: Màu trắng
-		1: lipgloss.NewStyle().Foreground(theory.CatTeal),   // Index: Xanh
-		2: lipgloss.NewStyle().Foreground(theory.CatYellow), // Middle: Vàng
-		3: lipgloss.NewStyle().Foreground(theory.CatPeach),  // Ring: Cam
-		4: lipgloss.NewStyle().Foreground(theory.CatRed),    // Pinky: Đỏ
+		0: lipgloss.NewStyle().Bold(true).Foreground(theory.CatRed).Background(theory.CatBase),
+		1: lipgloss.NewStyle().Bold(true).Foreground(theory.CatTeal).Background(theory.CatBase),
+		2: lipgloss.NewStyle().Bold(true).Foreground(theory.CatYellow).Background(theory.CatBase),
+		3: lipgloss.NewStyle().Bold(true).Foreground(theory.CatPeach).Background(theory.CatBase),
+		4: lipgloss.NewStyle().Bold(true).Foreground(theory.CatRed).Background(theory.CatBase),
 	}
-
-	// Upcoming Patterns: Gần -> Xa
-	upcomingPatterns = []string{" ● ", " : ", " ∴ "}
 )
 
 type cellData struct {
@@ -48,41 +47,101 @@ type cellData struct {
 	priority int
 }
 
-// Struct mới để chứa info cho Upcoming (Distance + Finger)
+type SequenceItem struct {
+	Order  int
+	Finger int
+}
+
+type ActiveItem struct {
+	Marker lesson.Marker
+	Order  int
+}
+
 type UpcomingItem struct {
-	Distance int // 1, 2, 3
-	Finger   int // 0-4
+	Distance int
+	Finger   int
 }
 
 type FretboardProps struct {
-	ActiveMarkers []lesson.Marker
-
-	// ĐỔI TỪ map[string]int SANG map[string]UpcomingItem
+	ActiveItems     []ActiveItem
 	UpcomingMarkers map[string]UpcomingItem
+	ScaleSequence   map[string]SequenceItem
+	Tuning          []theory.Note
+	ScaleConfig     *lesson.GeneratorConfig
+	ShowAll         bool
+	FretCount       int
+	ShowScaleShape  bool
+	ShowFingers     bool
+}
 
-	Tuning      []theory.Note
-	ScaleConfig *lesson.GeneratorConfig
-	ShowAll     bool
-	FretCount   int
-	ShowFingers bool
+// Helper format số để không vỡ layout (Luôn trả về string độ dài 3)
+func formatOrder3Chars(n int) string {
+	if n < 10 {
+		return fmt.Sprintf(" %d ", n) // " 1 "
+	}
+	// Nếu >= 10, bỏ padding phải để vừa khít 3 ký tự
+	return fmt.Sprintf(" %d", n) // " 10"
 }
 
 func RenderFretboard(props FretboardProps) string {
 	var b strings.Builder
 	grid := make(map[string]cellData)
 
-	// --- LAYER 0: SCALE GHOST NOTES (Giữ nguyên) ---
-	if props.ShowAll && props.ScaleConfig != nil {
+	// ==========================================================
+	// LAYER 0: MAP / BACKGROUND
+	// ==========================================================
+
+	if props.ShowScaleShape && props.ScaleConfig != nil {
+		// MODE 'S': VẼ FULL SHAPE
+		root := parseNoteSimple(props.ScaleConfig.Root)
+		startBox := props.ScaleConfig.StartFret
+		endBox := props.ScaleConfig.EndFret
+
+		for s := 0; s < 6; s++ {
+			for f := 0; f <= props.FretCount; f++ {
+				note := theory.CalculateNote(props.Tuning[s], f)
+
+				if theory.IsNoteInScale(note, root, props.ScaleConfig.Scale) {
+					if f >= startBox && f <= endBox {
+						finger := f - startBox + 1
+						if finger < 1 {
+							finger = 1
+						}
+						if finger > 4 {
+							finger = 4
+						}
+
+						key := fmt.Sprintf("%d_%d", s, f)
+
+						text := "   "
+						if seqItem, exists := props.ScaleSequence[key]; exists {
+							// FIX LAYOUT: Dùng hàm format 3 ký tự
+							text = formatOrder3Chars(seqItem.Order)
+						}
+
+						var style lipgloss.Style
+						if st, ok := fingerBgStyles[finger]; ok {
+							style = st
+						} else {
+							style = fingerBgStyles[0]
+						}
+
+						grid[key] = cellData{text: text, style: style, priority: 1}
+					}
+				}
+			}
+		}
+	} else if props.ShowAll && props.ScaleConfig != nil {
+		// MODE 'TAB'
 		root := parseNoteSimple(props.ScaleConfig.Root)
 		for s := 0; s < 6; s++ {
 			for f := 0; f <= props.FretCount; f++ {
 				note := theory.CalculateNote(props.Tuning[s], f)
 				if theory.IsNoteInScale(note, root, props.ScaleConfig.Scale) {
 					key := fmt.Sprintf("%d_%d", s, f)
-					color := theory.NoteColors[note]
 					grid[key] = cellData{
 						text:     fmt.Sprintf("%-3s", theory.NoteNames[note]),
-						style:    lipgloss.NewStyle().Foreground(color),
+						style:    lipgloss.NewStyle().Foreground(theory.NoteColors[note]),
 						priority: 1,
 					}
 				}
@@ -90,57 +149,72 @@ func RenderFretboard(props FretboardProps) string {
 		}
 	}
 
-	// --- LAYER 1: UPCOMING NOTES (SỬA LOGIC MÀU THEO NGÓN) ---
-	for key, item := range props.UpcomingMarkers {
-		if item.Distance > 3 {
-			continue
-		}
+	// ==========================================================
+	// LAYER 1: UPCOMING (Dự báo)
+	// ==========================================================
 
-		// 1. Chọn Symbol theo Distance (Gần to, xa nhỏ)
-		symbol := upcomingPatterns[item.Distance-1]
+	// FIX LOGIC: Nếu đang bật ShowScaleShape (S) thì KHÔNG hiện Upcoming nữa cho đỡ rối
+	if !props.ShowScaleShape {
+		for key, item := range props.UpcomingMarkers {
+			if item.Distance > 3 {
+				continue
+			}
+			symbol := upcomingPatterns[item.Distance-1]
 
-		// 2. Chọn Màu theo Finger
-		var style lipgloss.Style
-		if s, ok := fingerFgStyles[item.Finger]; ok {
-			style = s
-		} else {
-			style = fingerFgStyles[0] // Fallback
-		}
+			var style lipgloss.Style
+			if s, ok := fingerFgStyles[item.Finger]; ok {
+				style = s
+			} else {
+				style = fingerFgStyles[0]
+			}
 
-		// Nếu là nốt sắp đánh ngay lập tức (Dist 1), cho Bold lên
-		if item.Distance == 1 {
-			style = style.Copy().Bold(true)
-		} else {
-			// Nốt xa hơn thì làm mờ đi tí (Faint) để tạo chiều sâu
-			style = style.Copy().Faint(true)
-		}
+			if item.Distance == 1 {
+				style = style.Copy().Bold(true)
+			} else {
+				style = style.Copy().Faint(true)
+			}
 
-		grid[key] = cellData{
-			text:     symbol,
-			style:    style,
-			priority: 2,
+			grid[key] = cellData{text: symbol, style: style, priority: 2}
 		}
 	}
 
-	// --- LAYER 2: ACTIVE NOTES (Giữ nguyên) ---
-	for _, m := range props.ActiveMarkers {
+	// ==========================================================
+	// LAYER 2: ACTIVE (Đang đánh)
+	// ==========================================================
+	for _, item := range props.ActiveItems {
+		m := item.Marker
 		key := fmt.Sprintf("%d_%d", m.StringIndex, m.Fret)
+
 		var displayText string
 		var style lipgloss.Style
 
-		if props.ShowFingers {
+		if props.ShowScaleShape {
+			// MODE 'S': Active Note
+			// FIX LAYOUT: Dùng hàm format 3 ký tự cho số thứ tự
+			displayText = formatOrder3Chars(item.Order)
+
+			if s, ok := fingerFgStyles[m.Finger]; ok {
+				style = s
+			} else {
+				style = fingerFgStyles[0]
+			}
+			style = style.Copy().Underline(true)
+
+		} else if props.ShowFingers {
+			// MODE 'H'
 			if m.Finger > 0 {
 				displayText = fmt.Sprintf(" %d ", m.Finger)
-				if s, ok := fingerStyles[m.Finger]; ok {
+				if s, ok := fingerBgStyles[m.Finger]; ok {
 					style = s
 				} else {
 					style = activeNoteStyle
 				}
 			} else {
 				displayText = " 0 "
-				style = fingerStyles[0]
+				style = fingerBgStyles[0]
 			}
 		} else {
+			// STANDARD
 			displayText = fmt.Sprintf(" %-2s", theory.NoteNames[m.Note])
 			style = activeNoteStyle
 			if m.Fret == 0 {
@@ -151,7 +225,9 @@ func RenderFretboard(props FretboardProps) string {
 		grid[key] = cellData{text: displayText, style: style, priority: 3}
 	}
 
-	// --- RENDER (Giữ nguyên) ---
+	// ==========================================================
+	// RENDER
+	// ==========================================================
 	b.WriteString("     ")
 	for f := 0; f <= props.FretCount; f++ {
 		b.WriteString(lipgloss.NewStyle().Foreground(theory.CatLavender).Render(fmt.Sprintf("%-4d", f)))
