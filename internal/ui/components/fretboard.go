@@ -10,69 +10,146 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Config màu mè
+// --- STYLES ---
 var (
-	// Màu cho dây đàn và phím rỗng
-	fretLineStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240")) // Xám tối
+	fretLineStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
+	nutStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Bold(true)
 
-	// Màu cho nốt đang đánh (Active)
-	noteStyle = lipgloss.NewStyle().
+	// Style cho Upcoming (Dự báo)
+	// 1. Ngay lập tức (Dist 1) -> Màu nổi nhất (Cyan/Aqua)
+	upcoming1Style = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true)
+	// 2. Tiếp theo (Dist 2) -> Màu cảnh báo (Yellow)
+	upcoming2Style = lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
+	// 3. Xa hơn (Dist 3) -> Màu chìm (Grey)
+	upcoming3Style = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+
+	activeNoteStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("232")). // Chữ đen
-			Background(lipgloss.Color("208"))  // Nền Cam (nổi bật)
+			Foreground(lipgloss.Color("232")).
+			Background(lipgloss.Color("208"))
 
-	// Màu cho Finger (Helper)
-	fingerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("51")) // Cyan
+	// Pattern hiển thị theo khoảng cách: 1 -> 2 -> 3
+	// Mày thích chấm với 2 chấm đúng không? Đây:
+	// Dist 1: ● (To tổ bố)
+	// Dist 2: : (Hai chấm)
+	// Dist 3: ∴ (Ba chấm - Kiểu toán học vì tao thích thế, hoặc mày đổi thành " . " cũng được)
+	upcomingPatterns = []string{" ● ", " : ", " ∴ "}
 )
 
-// String Names cho UI (Hiển thị kiểu Tab: e B G D A E)
-// Index 5 (High E) -> Index 0 (Low E)
-var stringLabels = []string{"E", "A", "D", "G", "B", "e"}
+type cellData struct {
+	text     string
+	style    lipgloss.Style
+	priority int
+}
 
-// RenderFretboard vẽ cần đàn
-// activeSteps: Các nốt cần hiển thị (thường là steps[currentBeat])
-// tuning: Để biết dây buông là nốt gì (cho Drop D sau này)
-func RenderFretboard(markers []lesson.Marker, tuning []theory.Note, width int) string {
+type FretboardProps struct {
+	ActiveMarkers   []lesson.Marker
+	UpcomingMarkers map[string]int // Key: "s_f", Value: distance (1, 2, 3)
+	Tuning          []theory.Note
+	ScaleConfig     *lesson.GeneratorConfig
+	ShowAll         bool
+	FretCount       int
+}
+
+func RenderFretboard(props FretboardProps) string {
 	var b strings.Builder
+	grid := make(map[string]cellData)
 
-	// 1. Tối ưu hóa: Chuyển Slice Markers sang Map để tra cứu O(1)
-	// Key của map sẽ là "stringIdx_fretIdx" (VD: "0_5")
-	activeMap := make(map[string]lesson.Marker)
-	for _, m := range markers {
-		key := fmt.Sprintf("%d_%d", m.StringIndex, m.Fret)
-		activeMap[key] = m
+	// --- LAYER 0: SCALE GHOST NOTES ---
+	if props.ShowAll && props.ScaleConfig != nil {
+		root := parseNoteSimple(props.ScaleConfig.Root)
+		for s := 0; s < 6; s++ {
+			for f := 0; f <= props.FretCount; f++ {
+				note := theory.CalculateNote(props.Tuning[s], f)
+
+				// Nếu nốt thuộc Scale
+				if theory.IsNoteInScale(note, root, props.ScaleConfig.Scale) {
+					key := fmt.Sprintf("%d_%d", s, f)
+
+					// 1. Lấy màu tương ứng với nốt (C=Đỏ, E=Vàng...)
+					color := theory.NoteColors[note]
+
+					// 2. Tạo style chỉ có Foreground (Chữ), không có Background
+					// Tao thêm Faint(true) cho nó dịu lại một tí, đỡ tranh chấp với nốt chính
+					// Nếu thích rực rỡ thì bỏ .Faint(true) đi
+					style := lipgloss.NewStyle().Foreground(color)
+
+					grid[key] = cellData{
+						text:     fmt.Sprintf("%-3s", theory.NoteNames[note]),
+						style:    style,
+						priority: 1,
+					}
+				}
+			}
+		}
 	}
 
-	// 2. Vẽ Header (Số phím: 0 1 2 3...)
-	// Giới hạn vẽ 16 phím thôi cho gọn, hoặc tùy width
-	maxFret := 16
-	b.WriteString("     ") // Padding cho tên dây
-	for f := 0; f <= maxFret; f++ {
+	// --- LAYER 1: UPCOMING NOTES (Sửa lại theo ý mày) ---
+	for key, dist := range props.UpcomingMarkers {
+		// Chỉ render nếu khoảng cách <= 3 (theo config pattern)
+		if dist > 3 {
+			continue
+		}
+
+		var style lipgloss.Style
+		// Lấy pattern tương ứng (Index = dist - 1)
+		// Dist 1 -> patterns[0] -> ●
+		// Dist 2 -> patterns[1] -> :
+		// Dist 3 -> patterns[2] -> ∴
+		symbol := upcomingPatterns[dist-1]
+
+		switch dist {
+		case 1:
+			style = upcoming1Style
+		case 2:
+			style = upcoming2Style
+		default:
+			style = upcoming3Style
+		}
+
+		grid[key] = cellData{
+			text:     symbol,
+			style:    style,
+			priority: 2, // Đè lên Ghost note
+		}
+	}
+
+	// --- LAYER 2: ACTIVE NOTES ---
+	for _, m := range props.ActiveMarkers {
+		key := fmt.Sprintf("%d_%d", m.StringIndex, m.Fret)
+
+		style := activeNoteStyle
+		if m.Fret == 0 {
+			style = style.Copy().Background(lipgloss.Color("196"))
+		}
+
+		grid[key] = cellData{
+			text:     fmt.Sprintf(" %-2s", theory.NoteNames[m.Note]),
+			style:    style,
+			priority: 3, // Đè lên tất cả
+		}
+	}
+
+	// --- RENDER ---
+	// Header
+	b.WriteString("     ")
+	for f := 0; f <= props.FretCount; f++ {
 		b.WriteString(fmt.Sprintf("%-4d", f))
 	}
 	b.WriteString("\n")
 
-	// 3. Vẽ từng dây (QUAN TRỌNG: Vẽ từ Dây 5 (High E) xuống Dây 0 (Low E))
-	// Vì Tablature thì dây nhỏ nằm trên cùng.
+	// Body (High E -> Low E)
+	stringLabels := []string{"E", "A", "D", "G", "B", "e"}
 	for s := 5; s >= 0; s-- {
-		// Tên dây
-		label := stringLabels[s]
-		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Render(fmt.Sprintf(" %s ║ ", label)))
+		b.WriteString(nutStyle.Render(fmt.Sprintf(" %s ║", stringLabels[s])))
 
-		// Vẽ từng phím trên dây này
-		for f := 0; f <= maxFret; f++ {
-			// Check xem có marker ở vị trí này không?
+		for f := 0; f <= props.FretCount; f++ {
 			key := fmt.Sprintf("%d_%d", s, f)
-			if m, ok := activeMap[key]; ok {
-				// -- CÓ NỐT --
-				noteName := theory.NoteNames[m.Note]
 
-				// Render cục nốt (Tròn trịa tí: " A ")
-				display := fmt.Sprintf(" %-2s", noteName)
-				b.WriteString(noteStyle.Render(display) + fretLineStyle.Render("|"))
+			if cell, exists := grid[key]; exists {
+				b.WriteString(cell.style.Render(cell.text))
+				b.WriteString(fretLineStyle.Render("|"))
 			} else {
-				// -- KHÔNG CÓ NỐT (Dây rỗng) --
-				// Vẽ ---|
 				b.WriteString(fretLineStyle.Render("---|"))
 			}
 		}
@@ -81,3 +158,13 @@ func RenderFretboard(markers []lesson.Marker, tuning []theory.Note, width int) s
 
 	return b.String()
 }
+
+func parseNoteSimple(n string) theory.Note {
+	for i, name := range theory.NoteNames {
+		if strings.EqualFold(name, strings.TrimSpace(n)) {
+			return theory.Note(i)
+		}
+	}
+	return theory.C
+}
+
