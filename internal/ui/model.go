@@ -46,6 +46,7 @@ type Model struct {
 	width, height   int
 	fretCount       int
 	showAll         bool
+	showFingers     bool
 	metronomeActive bool // Bấm Space để chạy/dừng
 }
 
@@ -95,6 +96,7 @@ func NewModel() Model {
 		tuning:          theory.StandardTuning,
 		fretCount:       12,
 		metronomeActive: false, // Mặc định dừng
+		showFingers:     true,  // Mặc định hiện Nốt
 	}
 }
 
@@ -120,6 +122,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "tab":
 			m.showAll = !m.showAll
+
+		case "h", "H": // <--- THÊM CASE NÀY
+			m.showFingers = !m.showFingers
 
 		case " ": // Space: Toggle Play/Pause
 			m.metronomeActive = !m.metronomeActive
@@ -220,15 +225,21 @@ func (m Model) View() string {
 	}
 
 	// Upcoming Logic
-	upcoming := make(map[string]int)
+	upcoming := make(map[string]components.UpcomingItem)
 	lookAhead := 3
+
 	if len(m.currentLesson.Steps) > 0 {
 		for i := 1; i <= lookAhead; i++ {
 			nextIdx := (m.currentStep + i) % len(m.currentLesson.Steps)
 			for _, marker := range m.currentLesson.Steps[nextIdx].Markers {
 				key := fmt.Sprintf("%d_%d", marker.StringIndex, marker.Fret)
+
+				// Chỉ lưu thằng đầu tiên tìm thấy (gần nhất)
 				if _, exists := upcoming[key]; !exists {
-					upcoming[key] = i
+					upcoming[key] = components.UpcomingItem{
+						Distance: i,
+						Finger:   marker.Finger, // <--- LẤY FINGER TỪ MARKER
+					}
 				}
 			}
 		}
@@ -241,6 +252,7 @@ func (m Model) View() string {
 		ScaleConfig:     m.currentLesson.Generator,
 		ShowAll:         m.showAll,
 		FretCount:       m.fretCount,
+		ShowFingers:     m.showFingers,
 	}
 
 	// Render Components
@@ -255,8 +267,8 @@ func (m Model) View() string {
 		playStatus = "Pause"
 	}
 
-	helpText := fmt.Sprintf("[Space] %s  [F] Fret(%d)  [Tab] Scale  [Enter] Select",
-		playStatus, m.fretCount)
+	helpText := fmt.Sprintf("[Space] %s  [H] Fingers(%v)  [F] Fret(%d)  [Tab] Scale",
+		playStatus, m.showFingers, m.fretCount)
 
 	helpView := lipgloss.NewStyle().Foreground(theory.CatSubtext1).Render(helpText)
 

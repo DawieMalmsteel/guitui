@@ -12,30 +12,33 @@ import (
 
 // --- STYLES ---
 var (
-	// Dây đàn & Phím (Màu xám Overlay của Catppuccin)
 	fretLineStyle = lipgloss.NewStyle().Foreground(theory.CatOverlay1)
+	nutStyle      = lipgloss.NewStyle().Foreground(theory.CatText).Bold(true)
 
-	// Đầu cần đàn (Nut) - Màu chữ chính
-	nutStyle = lipgloss.NewStyle().Foreground(theory.CatText).Bold(true)
-
-	// Upcoming Note Styles
-	// 1. Ngay lập tức (Dist 1) -> Màu Sky (Xanh da trời nổi bật)
-	upcoming1Style = lipgloss.NewStyle().Foreground(theory.CatSky).Bold(true)
-	// 2. Tiếp theo (Dist 2) -> Màu Yellow (Vàng)
-	upcoming2Style = lipgloss.NewStyle().Foreground(theory.CatYellow)
-	// 3. Xa hơn (Dist 3) -> Màu Subtext (Xám sáng)
-	upcoming3Style = lipgloss.NewStyle().Foreground(theory.CatSubtext1)
-
-	// Active Note (Đang đánh)
-	// Chữ đen (Crust) trên nền Peach (Cam đào) -> Tương phản cao vãi lồn
-	activeNoteStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(theory.CatCrust).
-			Background(theory.CatPeach)
-
-	// Dây buông active: Nền Đỏ
+	// Active Note Styles (Giữ nguyên)
+	activeNoteStyle       = lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatPeach)
 	activeOpenStringStyle = activeNoteStyle.Copy().Background(theory.CatRed)
 
+	// Finger Backgrounds (Cho Active Note)
+	fingerStyles = map[int]lipgloss.Style{
+		0: activeOpenStringStyle,
+		1: activeNoteStyle.Copy().Background(theory.CatTeal),
+		2: activeNoteStyle.Copy().Background(theory.CatYellow),
+		3: activeNoteStyle.Copy().Background(theory.CatPeach),
+		4: activeNoteStyle.Copy().Background(theory.CatRed),
+	}
+
+	// --- NEW: FINGER FOREGROUNDS (Cho Upcoming Patterns) ---
+	// Chỉ tô màu chữ, không tô nền
+	fingerFgStyles = map[int]lipgloss.Style{
+		0: lipgloss.NewStyle().Foreground(theory.CatText),   // Open: Màu trắng
+		1: lipgloss.NewStyle().Foreground(theory.CatTeal),   // Index: Xanh
+		2: lipgloss.NewStyle().Foreground(theory.CatYellow), // Middle: Vàng
+		3: lipgloss.NewStyle().Foreground(theory.CatPeach),  // Ring: Cam
+		4: lipgloss.NewStyle().Foreground(theory.CatRed),    // Pinky: Đỏ
+	}
+
+	// Upcoming Patterns: Gần -> Xa
 	upcomingPatterns = []string{" ● ", " : ", " ∴ "}
 )
 
@@ -45,38 +48,41 @@ type cellData struct {
 	priority int
 }
 
+// Struct mới để chứa info cho Upcoming (Distance + Finger)
+type UpcomingItem struct {
+	Distance int // 1, 2, 3
+	Finger   int // 0-4
+}
+
 type FretboardProps struct {
-	ActiveMarkers   []lesson.Marker
-	UpcomingMarkers map[string]int // Key: "s_f", Value: distance (1, 2, 3)
-	Tuning          []theory.Note
-	ScaleConfig     *lesson.GeneratorConfig
-	ShowAll         bool
-	FretCount       int
+	ActiveMarkers []lesson.Marker
+
+	// ĐỔI TỪ map[string]int SANG map[string]UpcomingItem
+	UpcomingMarkers map[string]UpcomingItem
+
+	Tuning      []theory.Note
+	ScaleConfig *lesson.GeneratorConfig
+	ShowAll     bool
+	FretCount   int
+	ShowFingers bool
 }
 
 func RenderFretboard(props FretboardProps) string {
 	var b strings.Builder
 	grid := make(map[string]cellData)
 
-	// --- LAYER 0: SCALE GHOST NOTES ---
+	// --- LAYER 0: SCALE GHOST NOTES (Giữ nguyên) ---
 	if props.ShowAll && props.ScaleConfig != nil {
 		root := parseNoteSimple(props.ScaleConfig.Root)
-		for s := range 6 {
+		for s := 0; s < 6; s++ {
 			for f := 0; f <= props.FretCount; f++ {
 				note := theory.CalculateNote(props.Tuning[s], f)
-
 				if theory.IsNoteInScale(note, root, props.ScaleConfig.Scale) {
 					key := fmt.Sprintf("%d_%d", s, f)
-
-					// Lấy màu từ bảng Catppuccin NoteColors
 					color := theory.NoteColors[note]
-
-					// Style chữ màu đó, không nền
-					style := lipgloss.NewStyle().Foreground(color)
-
 					grid[key] = cellData{
 						text:     fmt.Sprintf("%-3s", theory.NoteNames[note]),
-						style:    style,
+						style:    lipgloss.NewStyle().Foreground(color),
 						priority: 1,
 					}
 				}
@@ -84,45 +90,70 @@ func RenderFretboard(props FretboardProps) string {
 		}
 	}
 
-	// --- LAYER 1: UPCOMING NOTES ---
-	for key, dist := range props.UpcomingMarkers {
-		if dist > 3 {
+	// --- LAYER 1: UPCOMING NOTES (SỬA LOGIC MÀU THEO NGÓN) ---
+	for key, item := range props.UpcomingMarkers {
+		if item.Distance > 3 {
 			continue
 		}
-		symbol := upcomingPatterns[dist-1]
+
+		// 1. Chọn Symbol theo Distance (Gần to, xa nhỏ)
+		symbol := upcomingPatterns[item.Distance-1]
+
+		// 2. Chọn Màu theo Finger
 		var style lipgloss.Style
-		switch dist {
-		case 1:
-			style = upcoming1Style
-		case 2:
-			style = upcoming2Style
-		default:
-			style = upcoming3Style
+		if s, ok := fingerFgStyles[item.Finger]; ok {
+			style = s
+		} else {
+			style = fingerFgStyles[0] // Fallback
 		}
-		grid[key] = cellData{text: symbol, style: style, priority: 2}
-	}
 
-	// --- LAYER 2: ACTIVE NOTES ---
-	for _, m := range props.ActiveMarkers {
-		key := fmt.Sprintf("%d_%d", m.StringIndex, m.Fret)
-
-		style := activeNoteStyle
-		if m.Fret == 0 {
-			style = activeOpenStringStyle
+		// Nếu là nốt sắp đánh ngay lập tức (Dist 1), cho Bold lên
+		if item.Distance == 1 {
+			style = style.Copy().Bold(true)
+		} else {
+			// Nốt xa hơn thì làm mờ đi tí (Faint) để tạo chiều sâu
+			style = style.Copy().Faint(true)
 		}
 
 		grid[key] = cellData{
-			text:     fmt.Sprintf(" %-2s", theory.NoteNames[m.Note]),
+			text:     symbol,
 			style:    style,
-			priority: 3,
+			priority: 2,
 		}
 	}
 
-	// --- RENDER ---
-	// Header
+	// --- LAYER 2: ACTIVE NOTES (Giữ nguyên) ---
+	for _, m := range props.ActiveMarkers {
+		key := fmt.Sprintf("%d_%d", m.StringIndex, m.Fret)
+		var displayText string
+		var style lipgloss.Style
+
+		if props.ShowFingers {
+			if m.Finger > 0 {
+				displayText = fmt.Sprintf(" %d ", m.Finger)
+				if s, ok := fingerStyles[m.Finger]; ok {
+					style = s
+				} else {
+					style = activeNoteStyle
+				}
+			} else {
+				displayText = " 0 "
+				style = fingerStyles[0]
+			}
+		} else {
+			displayText = fmt.Sprintf(" %-2s", theory.NoteNames[m.Note])
+			style = activeNoteStyle
+			if m.Fret == 0 {
+				style = activeOpenStringStyle
+			}
+		}
+
+		grid[key] = cellData{text: displayText, style: style, priority: 3}
+	}
+
+	// --- RENDER (Giữ nguyên) ---
 	b.WriteString("     ")
 	for f := 0; f <= props.FretCount; f++ {
-		// Số phím màu Lavender (Tím nhạt)
 		b.WriteString(lipgloss.NewStyle().Foreground(theory.CatLavender).Render(fmt.Sprintf("%-4d", f)))
 	}
 	b.WriteString("\n")
@@ -130,7 +161,6 @@ func RenderFretboard(props FretboardProps) string {
 	stringLabels := []string{"E", "A", "D", "G", "B", "e"}
 	for s := 5; s >= 0; s-- {
 		b.WriteString(nutStyle.Render(fmt.Sprintf(" %s ║", stringLabels[s])))
-
 		for f := 0; f <= props.FretCount; f++ {
 			key := fmt.Sprintf("%d_%d", s, f)
 			if cell, exists := grid[key]; exists {
