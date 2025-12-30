@@ -43,17 +43,18 @@ CATEGORY: scale
 DIFFICULTY: beginner
 TUNING: EADGBE
 
-e|5(f1)|8(f4)|
-B|5(f1)|7(f3)|
-G|5(f1)|7(f3)|
-D|5(f1)|7(f3)|
-A|5(f1)|8(f4)|
-E|5(f1)|8(f4)|
+e|5(f1)|-----|7(f3)|-----|8(f4)|
+B|-----|5(f1)|-----|7(f3)|-----|
+G|-----|-----|5(f2)|-----|-----|
+D|-----|-----|-----|5(f2)|-----|
+A|-----|-----|-----|-----|5(f1)|
+E|-----|-----|-----|-----|-----|
 
 NOTES:
-- Start with index finger at 5th fret
-- Box pattern - all fingers stay in position
-- Practice ascending and descending
+- Each beat plays one note sequentially
+- All strings must have same number of beats (5 beats in this example)
+- Empty cells (|-----|) represent rest beats on that string
+- Practice ascending pattern one string at a time
 ```
 
 ---
@@ -107,22 +108,41 @@ etc.
 **IMPORTANT:** Beats are separated by pipe `|` delimiters. Each cell between pipes is one beat.
 
 ```
-e|5(f1)|7(f3)|-----|8(f4)|
-B|-----|5(f1)|7(f3)|-----|
-G|-----|-----|-----|-----|
+e|5(f1)|-----|7(f3)|-----|8(f4)|
+B|-----|5(f1)|-----|7(f3)|-----|
+G|-----|-----|5(f2)|-----|-----|
 
 Beat 1: Note on e string (fret 5, finger 1)
-Beat 2: Notes on e and B strings together (chord)
-Beat 3: Rest (empty or dashes only)
-Beat 4: Note on e string (fret 8, finger 4)
+Beat 2: Note on B string (fret 5, finger 1)
+Beat 3: Notes on e and G strings together (fret 7 and fret 5)
+Beat 4: Note on B string (fret 7, finger 3)
+Beat 5: Note on e string (fret 8, finger 4)
 ```
 
 **Rules:**
-- `|` separates beats
-- Notes in the same cell play together (chords)
-- Empty cells or cells with only `---` are rests
-- Dashes `-` are visual only (ignored by parser)
+- `|` separates beats - each column between `|` is ONE beat
+- **ALL strings MUST have the same number of `|` delimiters** for proper alignment
+- Notes in the same beat (vertical column) play together (chords)
+- Empty cells `|-----|` or `||` are rest beats (no sound on that string)
+- Dashes `-` are visual only (ignored by parser) - use any number for spacing
 - Use dashes to align tab for readability
+
+**CRITICAL:** Make sure all 6 strings have the same number of beats (same number of `|` symbols):
+
+```
+✅ CORRECT - All strings have 5 cells (5 beats):
+e|5(f1)|-----|7(f3)|-----|8(f4)|
+B|-----|5(f1)|-----|7(f3)|-----|
+G|-----|-----|5(f2)|-----|-----|
+D|-----|-----|-----|5(f2)|-----|
+A|-----|-----|-----|-----|5(f1)|
+E|-----|-----|-----|-----|-----|
+
+❌ WRONG - Unequal number of cells (will cause misalignment):
+e|5(f1)|-----|7(f3)|8(f4)|        (4 cells)
+B|-----|5(f1)|7(f3)|              (3 cells)
+G|5(f2)|                          (1 cell)
+```
 
 ### Finger Numbers (Optional)
 
@@ -538,28 +558,38 @@ NOTES: {multiline text}
 
 ### Best Practices
 
-1. **Spacing**: Use dashes (`-`) for consistent spacing
-2. **Alignment**: Keep notes vertically aligned across strings
-3. **Clarity**: Add spaces between distinct phrases
-4. **Comments**: Use NOTES section for instructions
-5. **Finger hints**: Include finger numbers for learners
+1. **Beat Alignment**: **ALL strings MUST have the same number of `|` delimiters**
+2. **Spacing**: Use dashes (`-`) for consistent spacing within cells
+3. **Vertical Alignment**: Keep beats vertically aligned across all strings
+4. **Rest Beats**: Use `|-----|` or `||` for beats where a string doesn't play
+5. **Comments**: Use NOTES section for instructions
+6. **Finger hints**: Include finger numbers for learners `(f1)`, `(f2)`, etc.
 
 ### Good Example
 
 ```
-e|-----5f1-----7f3-----8f4-----|
-B|-----5f1-----6f2-----8f4-----|
-G|-----5f1-----7f3-------------|
-   let ring-----------
+e|5(f1)|-----|7(f3)|-----|8(f4)|-----|
+B|-----|5(f1)|-----|7(f3)|-----|8(f4)|
+G|-----|-----|5(f2)|-----|7(f4)|-----|
+D|-----|-----|-----|5(f2)|-----|7(f4)|
+A|-----|-----|-----|-----|5(f1)|-----|
+E|-----|-----|-----|-----|-----|5(f1)|
 ```
+✅ All strings have 6 beats (6 cells between `|`)  
+✅ Proper vertical alignment  
+✅ Finger numbers included
 
 ### Poor Example (avoid)
 
 ```
-e|--5--7--8|  (inconsistent spacing)
-B|--5-6-8--|  (no finger info)
-G|5-7------|  (misaligned)
+e|5(f1)|7(f3)|8(f4)|        ❌ Only 3 beats
+B|5(f1)|7(f3)|              ❌ Only 2 beats
+G|5(f2)|                    ❌ Only 1 beat
+D|5|7|                      ❌ Different beat count, no spacing
 ```
+❌ Unequal number of beats per string  
+❌ Will cause beat misalignment  
+❌ Parser cannot sync correctly
 
 ---
 

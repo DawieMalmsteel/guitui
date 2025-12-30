@@ -48,16 +48,23 @@ CATEGORY: scale | exercise | song
 DIFFICULTY: beginner | intermediate | advanced
 TUNING: EADGBE
 
-e|--------------------------|
-B|--------------------------|
-G|--------------------------|
-D|--------------------------|
-A|--------------------------|
-E|--------------------------|
+e|5(f1)|-----|7(f3)|-----|
+B|-----|5(f1)|-----|7(f3)|
+G|-----|-----|5(f2)|-----|
+D|-----|-----|-----|5(f2)|
+A|-----|-----|-----|-----|
+E|-----|-----|-----|-----|
 
 NOTES:
 Description here
 ```
+
+**CRITICAL RULES:**
+- `|` separates beats - each cell is ONE beat
+- **ALL strings MUST have the same number of `|` delimiters**
+- Empty cells `|-----|` or `||` = rest beats
+- Dashes `-` are visual only (use any amount)
+- Notes in same vertical column play together (chords)
 
 ## 🎯 Common Patterns
 
@@ -115,24 +122,33 @@ E = 6th string (low E) - thickest
 
 ## ⚡ Quick Examples
 
-### Simple Scale
+### Simple Scale (Sequential Notes)
 ```
-e|--5f1--7f3--8f4--|
-B|--5f1--6f2--8f4--|
-G|--5f1--7f3--------|
+e|5(f1)|-----|7(f3)|-----|8(f4)|
+B|-----|5(f1)|-----|7(f3)|-----|
+G|-----|-----|5(f2)|-----|-----|
 ```
+Each beat plays one note. All strings have 5 beats.
+
+### Chord Progression (Notes Together)
+```
+e|5(f1)|7(f3)|8(f4)|
+B|5(f1)|7(f3)|8(f4)|
+G|5(f2)|7(f4)|9(f4)|
+```
+Each beat plays multiple strings together (chord).
 
 ### Metal Riff
 ```
-E|--0-0-0-0-3p0-5--|
-   PM-------
-   d d d d
+E|0(f0)|0(f0)|0(f0)|3(f3)|5(f1)|
+A|-----|-----|-----|-----|-----|
+   PM-----------------------
 ```
 
 ### Blues Lick
 ```
-e|--8b10r8--5h8p5-----|
-B|----------------8~--|
+e|8(f4)|-----|5(f1)|-----|
+B|-----|-----|-----|8(f4)|
 ```
 
 ### Sweep Arpeggio

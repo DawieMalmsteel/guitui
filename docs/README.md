@@ -44,15 +44,22 @@ The `lessons_tab/` directory contains example lesson files:
    TUNING: EADGBE
    ```
 
-3. Add the tab:
+3. Add the tab (IMPORTANT: All strings must have same number of `|` delimiters):
    ```
-   e|--------------------------|
-   B|--------------------------|
-   G|--------------------------|
-   D|--------------------------|
-   A|--------------------------|
-   E|--------------------------|
+   e|5(f1)|-----|7(f3)|-----|8(f4)|
+   B|-----|5(f1)|-----|7(f3)|-----|
+   G|-----|-----|5(f2)|-----|-----|
+   D|-----|-----|-----|5(f2)|-----|
+   A|-----|-----|-----|-----|5(f1)|
+   E|-----|-----|-----|-----|-----|
    ```
+   
+   **Beat Format Rules:**
+   - `|` separates beats - each cell between `|` is ONE beat
+   - **ALL 6 strings MUST have identical number of `|` symbols**
+   - Empty cells `|-----|` or `||` represent rest beats
+   - Dashes `-` are visual only (use any amount for spacing)
+   - Notes in same vertical column play together (chords)
 
 4. Add notes section:
    ```
@@ -63,7 +70,9 @@ The `lessons_tab/` directory contains example lesson files:
 ### Basic Notation
 
 - **Fret numbers**: `5`, `7`, `12`
-- **Finger info**: `5f1` (fret 5, finger 1)
+- **Finger info**: `5(f1)` (fret 5, finger 1) - use parentheses format
+- **Beat delimiter**: `|` - separates beats (CRITICAL: all strings need same count)
+- **Rest beat**: `|-----|` or `||` - empty beat on that string
 - **Hammer-on**: `5h7`
 - **Pull-off**: `7p5`
 - **Bend**: `7b9`
@@ -73,6 +82,30 @@ The `lessons_tab/` directory contains example lesson files:
 - **Tap**: `12t`
 - **Harmonic**: `<12>` or `7*`
 - **Muted**: `x`
+
+## 👆 Finger Numbers
+
+```
+0 = Open string
+1 = Index finger
+2 = Middle finger
+3 = Ring finger
+4 = Pinky
+```
+
+### Finger Color Coding
+
+The app displays different colors for each finger to help visual learning:
+
+| Finger | Name | Color |
+|--------|------|-------|
+| 0 | Open string | 🔴 Red |
+| 1 | Index | 🩵 Teal |
+| 2 | Middle | 💛 Yellow |
+| 3 | Ring | 🧡 Peach |
+| 4 | Pinky | 💜 Mauve (Purple) |
+
+**Note:** Active notes (currently playing) will show with the corresponding finger color as background.
 
 ## 📖 Learning Path
 
@@ -141,10 +174,27 @@ Standard tuning (EADGBE) is default. Other tunings can be specified:
 
 ### From Standard
 
-**Changed notation for clarity:**
-- `tr` → `l` (trill) - easier to distinguish from other symbols
+**Important format requirements for this parser:**
+- `|` delimiter is **REQUIRED** to separate beats
+- All strings must have **equal number of `|` delimiters**
+- Finger notation uses parentheses: `5(f1)` instead of `5f1`
+- Trill notation: `l` instead of `tr` (easier to parse)
 
-**All other notations match standard guitar tab format.**
+**Example of CORRECT format:**
+```
+✅ All strings have 4 beats (4 cells):
+e|5(f1)|7(f3)|8(f4)|-----|
+B|-----|5(f1)|-----|7(f3)|
+G|-----|-----|5(f2)|-----|
+```
+
+**Example of WRONG format (will not parse correctly):**
+```
+❌ Unequal beats, old finger notation:
+e|--5f1--7f3--8f4--|
+B|--5f1--7f3-------|
+G|--5f2------------|
+```
 
 ## 🌐 Resources
 
@@ -171,11 +221,13 @@ The parser will handle conversion to internal format.
 ## 📝 Contributing
 
 When adding new lessons:
-- Follow the format specification
+- **Follow beat alignment rules** - all strings need same number of `|` delimiters
+- Use parentheses finger notation: `5(f1)` not `5f1`
 - Include finger numbers for educational value
 - Add detailed NOTES section
-- Use consistent spacing and alignment
-- Test tab visually before committing
+- Use consistent spacing with dashes for readability
+- **Verify all strings have equal beat count before committing**
+- Test tab visually and in app before committing
 
 ## 🆘 Support
 
