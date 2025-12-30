@@ -52,6 +52,7 @@ type Model struct {
 	showFingers    bool // Finger Helper Mode - Phím H
 	showScaleShape bool // Sequence/Shape Mode - Phím S
 	showUpcoming   bool // Toggle upcoming markers - Phím U
+	showHelp       bool // Toggle full help text - Phím ?
 
 	// Metronome State
 	metronomeActive    bool
@@ -89,6 +90,7 @@ func NewModel() Model {
 	l.Title = "GUITAR LESSONS"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
+	l.SetShowHelp(false) // Disable built-in help, we'll add custom help
 	l.Styles.Title = lipgloss.NewStyle().Foreground(theory.CatMauve).Bold(true).Padding(0, 1)
 
 	// 3. Default Lesson
@@ -286,6 +288,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "u", "U": // Toggle upcoming markers
 			m.showUpcoming = !m.showUpcoming
+
+		case "?": // Toggle help display
+			m.showHelp = !m.showHelp
 		}
 
 	case tea.WindowSizeMsg:
@@ -373,7 +378,31 @@ func (m Model) View() string {
 		PaddingLeft(1).
 		Render(m.list.View())
 
-	topSection := lipgloss.JoinHorizontal(lipgloss.Top, circleBox, listBox)
+	// Help text below list
+	var helpText string
+	if m.showHelp {
+		// Full help with current status - split into multiple lines
+		playStatus := "Play"
+		if m.metronomeActive {
+			playStatus = "Pause"
+		}
+		line1 := fmt.Sprintf("[Space] %s  [M] Metro  [H] Fing(%s)  [S] Seq(%s)", 
+			playStatus, status(m.showFingers), status(m.showScaleShape))
+		line2 := fmt.Sprintf("[Tab] Note(%s)  [U] Upc(%s)  [F] Fret(%d)  [?] less",
+			status(m.showAll), status(m.showUpcoming), m.fretCount)
+		helpText = line1 + "\n" + line2
+	} else {
+		// Short help
+		helpText = "↑/k up • ↓/j down • q quit • ? more"
+	}
+	helpView := lipgloss.NewStyle().
+		Foreground(theory.CatSubtext1).
+		PaddingLeft(1).
+		Render(helpText)
+
+	listWithHelp := lipgloss.JoinVertical(lipgloss.Left, listBox, helpView)
+
+	topSection := lipgloss.JoinHorizontal(lipgloss.Top, circleBox, listWithHelp)
 	topContainer := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, false, true, false).
 		BorderForeground(theory.CatOverlay1).
@@ -407,15 +436,7 @@ func (m Model) View() string {
 		metroDisplay = components.RenderMetronome(currentBeat, totalBeats, m.metroBPM)
 	}
 
-	// Status Bar
-	playStatus := "Play "
-	if m.metronomeActive {
-		playStatus = "Pause"
-	}
-	helpText := fmt.Sprintf("[Space] %s  [M] Metro  [H] Fing(%s)  [S] Seq(%s)  [Tab] Note(%s)  [U] Upc(%s)  [F] Fret(%d)",
-		playStatus, status(m.showFingers), status(m.showScaleShape), status(m.showAll), status(m.showUpcoming), m.fretCount)
-	helpView := lipgloss.NewStyle().Foreground(theory.CatSubtext1).Render(helpText)
-
+	// Info Bar
 	infoBar := lipgloss.NewStyle().
 		Foreground(theory.CatSky).Bold(true).
 		Render(fmt.Sprintf("PLAYING: %s (Step %d/%d)", m.currentLesson.Title, m.currentStep+1, len(m.currentLesson.Steps)))
@@ -424,10 +445,7 @@ func (m Model) View() string {
 	bottomSection := lipgloss.JoinVertical(lipgloss.Left,
 		lipgloss.NewStyle().Padding(0, 1).Render(infoBar),
 		lipgloss.NewStyle().Render(fretboardView),
-		lipgloss.JoinHorizontal(lipgloss.Top,
-			lipgloss.NewStyle().PaddingLeft(2).Render(metroDisplay),
-			lipgloss.NewStyle().PaddingLeft(4).Render(helpView),
-		),
+		lipgloss.NewStyle().PaddingLeft(2).Render(metroDisplay),
 	)
 
 	mainView := lipgloss.JoinVertical(lipgloss.Left, topContainer, bottomSection)
