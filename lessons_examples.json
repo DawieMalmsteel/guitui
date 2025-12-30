@@ -1,0 +1,149 @@
+[
+  {
+    "title": "A Minor Pentatonic - Box Pattern Position 1",
+    "category": "scale",
+    "bpm": 80,
+    "key": "A",
+    "generator": {
+      "root": "A",
+      "scale": "minor_pentatonic",
+      "position": 1,
+      "pos_type": "caged",
+      "pattern": "box",
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "A Minor Pentatonic - Triplet Sequence",
+    "category": "sequence",
+    "bpm": 100,
+    "key": "A",
+    "generator": {
+      "root": "A",
+      "scale": "minor_pentatonic",
+      "position": 1,
+      "pos_type": "caged",
+      "pattern": "sequence",
+      "sequence_type": "triplet",
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "A Minor Pentatonic - Thirds Interval",
+    "category": "sequence",
+    "bpm": 90,
+    "key": "A",
+    "generator": {
+      "root": "A",
+      "scale": "minor_pentatonic",
+      "position": 1,
+      "pos_type": "caged",
+      "pattern": "sequence",
+      "sequence_type": "thirds",
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "A Minor Pentatonic - Sequence Pattern (1-2-3-2)",
+    "category": "sequence",
+    "bpm": 85,
+    "key": "A",
+    "generator": {
+      "root": "A",
+      "scale": "minor_pentatonic",
+      "position": 1,
+      "pos_type": "caged",
+      "pattern": "sequence",
+      "sequence_type": "sequence",
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "Chromatic Exercise - Starting at 5th Fret",
+    "category": "exercise",
+    "bpm": 60,
+    "key": "A",
+    "generator": {
+      "root": "A",
+      "scale": "chromatic",
+      "position": 1,
+      "pos_type": "caged",
+      "pattern": "exercise",
+      "exercise_type": "chromatic",
+      "start_fret": 5,
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "String Skipping Exercise - A Minor Pentatonic",
+    "category": "exercise",
+    "bpm": 70,
+    "key": "A",
+    "generator": {
+      "root": "A",
+      "scale": "minor_pentatonic",
+      "position": 1,
+      "pos_type": "caged",
+      "pattern": "exercise",
+      "exercise_type": "string_skip",
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "Hammer-On/Pull-Off - A Minor Pentatonic",
+    "category": "exercise",
+    "bpm": 80,
+    "key": "A",
+    "generator": {
+      "root": "A",
+      "scale": "minor_pentatonic",
+      "position": 1,
+      "pos_type": "caged",
+      "pattern": "exercise",
+      "exercise_type": "hammer_pull",
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "E Minor Pentatonic - Box Pattern Position 1",
+    "category": "scale",
+    "bpm": 90,
+    "key": "E",
+    "generator": {
+      "root": "E",
+      "scale": "minor_pentatonic",
+      "position": 1,
+      "pos_type": "caged",
+      "pattern": "box",
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "G Major Scale - Box Pattern Position 1",
+    "category": "scale",
+    "bpm": 85,
+    "key": "G",
+    "generator": {
+      "root": "G",
+      "scale": "major",
+      "position": 1,
+      "pos_type": "caged",
+      "pattern": "box",
+      "direction": "ascending"
+    }
+  },
+  {
+    "title": "A Blues Scale - Box Pattern Position 1",
+    "category": "scale",
+    "bpm": 75,
+    "key": "A",
+    "generator": {
+      "root": "A",
+      "scale": "blues",
+      "position": 1,
+      "pos_type": "caged",
+      "pattern": "box",
+      "direction": "ascending"
+    }
+  }
+]

@@ -15,6 +15,11 @@ var Scales = map[string]ScaleFormula{
 	"lydian":           {0, 2, 4, 6, 7, 9, 11},
 	"mixolydian":       {0, 2, 4, 5, 7, 9, 10},
 	"locrian":          {0, 1, 3, 5, 6, 8, 10},
+	"harmonic_minor":   {0, 2, 3, 5, 7, 8, 11},
+	"melodic_minor":    {0, 2, 3, 5, 7, 9, 11},
+	"whole_tone":       {0, 2, 4, 6, 8, 10},
+	"diminished_hw":    {0, 1, 3, 4, 6, 7, 9, 10},
+	"diminished_wh":    {0, 2, 3, 5, 6, 8, 9, 11},
 }
 
 // Kiểm tra xem nốt target có nằm trong Scale (gốc Root) không

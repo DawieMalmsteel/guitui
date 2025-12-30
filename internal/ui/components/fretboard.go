@@ -10,19 +10,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// --- STYLES (Giữ nguyên) ---
+// --- STYLES ---
 var (
 	fretLineStyle    = lipgloss.NewStyle().Foreground(theory.CatOverlay1)
 	nutStyle         = lipgloss.NewStyle().Foreground(theory.CatText).Bold(true)
 	upcomingPatterns = []string{" ● ", " : ", " ∴ "}
 
-	activeNoteStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(theory.CatCrust).
-			Background(theory.CatPeach)
+	// Active Styles (Giữ nguyên)
+	activeNoteStyle       = lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatPeach)
 	activeOpenStringStyle = activeNoteStyle.Copy().Background(theory.CatRed)
 
-	// Styles Ngón Tay (Background màu, Chữ đen)
+	// Finger Styles (Giữ nguyên)
 	fingerBgStyles = map[int]lipgloss.Style{
 		0: lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatRed),
 		1: lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatTeal),
@@ -31,7 +29,6 @@ var (
 		4: lipgloss.NewStyle().Bold(true).Foreground(theory.CatCrust).Background(theory.CatRed),
 	}
 
-	// Styles Ngón Tay Đảo Ngược (Background tối, Chữ màu)
 	fingerFgStyles = map[int]lipgloss.Style{
 		0: lipgloss.NewStyle().Bold(true).Foreground(theory.CatRed).Background(theory.CatBase),
 		1: lipgloss.NewStyle().Bold(true).Foreground(theory.CatTeal).Background(theory.CatBase),
@@ -39,48 +36,55 @@ var (
 		3: lipgloss.NewStyle().Bold(true).Foreground(theory.CatPeach).Background(theory.CatBase),
 		4: lipgloss.NewStyle().Bold(true).Foreground(theory.CatRed).Background(theory.CatBase),
 	}
+
+	// --- NEW STYLE: FRET MARKER (INLAY) ---
+	// Màu Surface2 (Xám sáng hơn nền chút) để không tranh chấp với nốt nhạc
+	inlayStyle = lipgloss.NewStyle().Foreground(theory.CatSurface1)
 )
+
+// List các phím có chấm (Standard Guitar)
+var (
+	singleDotFrets = map[int]bool{3: true, 5: true, 7: true, 9: true, 15: true, 17: true, 19: true, 21: true}
+	doubleDotFrets = map[int]bool{12: true, 24: true}
+)
+
+// ... (Struct cellData, SequenceItem, ActiveItem, UpcomingItem, FretboardProps GIỮ NGUYÊN) ...
 
 type cellData struct {
 	text     string
 	style    lipgloss.Style
 	priority int
 }
-
 type SequenceItem struct {
 	Order  int
 	Finger int
 }
-
 type ActiveItem struct {
 	Marker lesson.Marker
 	Order  int
 }
-
 type UpcomingItem struct {
 	Distance int
 	Finger   int
 }
-
 type FretboardProps struct {
 	ActiveItems     []ActiveItem
 	UpcomingMarkers map[string]UpcomingItem
 	ScaleSequence   map[string]SequenceItem
+	AllNotes        map[string]theory.Note // For Tab mode (note names)
 	Tuning          []theory.Note
-	ScaleConfig     *lesson.GeneratorConfig
 	ShowAll         bool
 	FretCount       int
 	ShowScaleShape  bool
 	ShowFingers     bool
 }
 
-// Helper format số để không vỡ layout (Luôn trả về string độ dài 3)
+// Helper format số
 func formatOrder3Chars(n int) string {
 	if n < 10 {
-		return fmt.Sprintf(" %d ", n) // " 1 "
+		return fmt.Sprintf(" %d ", n)
 	}
-	// Nếu >= 10, bỏ padding phải để vừa khít 3 ký tự
-	return fmt.Sprintf(" %d", n) // " 10"
+	return fmt.Sprintf(" %d", n)
 }
 
 func RenderFretboard(props FretboardProps) string {
@@ -88,120 +92,65 @@ func RenderFretboard(props FretboardProps) string {
 	grid := make(map[string]cellData)
 
 	// ==========================================================
-	// LAYER 0: MAP / BACKGROUND
+	// LAYER 0: SCALE SEQUENCE (from Steps data)
 	// ==========================================================
-
-	if props.ShowScaleShape && props.ScaleConfig != nil {
-		// MODE 'S': VẼ FULL SHAPE
-		root := parseNoteSimple(props.ScaleConfig.Root)
-		startBox := props.ScaleConfig.StartFret
-		endBox := props.ScaleConfig.EndFret
-
-		for s := 0; s < 6; s++ {
-			for f := 0; f <= props.FretCount; f++ {
-				note := theory.CalculateNote(props.Tuning[s], f)
-
-				if theory.IsNoteInScale(note, root, props.ScaleConfig.Scale) {
-					if f >= startBox && f <= endBox {
-						finger := f - startBox + 1
-						if finger < 1 {
-							finger = 1
-						}
-						if finger > 4 {
-							finger = 4
-						}
-
-						key := fmt.Sprintf("%d_%d", s, f)
-
-						text := "   "
-						if seqItem, exists := props.ScaleSequence[key]; exists {
-							// FIX LAYOUT: Dùng hàm format 3 ký tự
-							text = formatOrder3Chars(seqItem.Order)
-						}
-
-						var style lipgloss.Style
-						if st, ok := fingerBgStyles[finger]; ok {
-							style = st
-						} else {
-							style = fingerBgStyles[0]
-						}
-
-						grid[key] = cellData{text: text, style: style, priority: 1}
-					}
-				}
+	if props.ShowScaleShape {
+		// Render notes with sequence numbers and finger colors
+		for key, seqItem := range props.ScaleSequence {
+			text := formatOrder3Chars(seqItem.Order)
+			
+			var style lipgloss.Style
+			if st, ok := fingerBgStyles[seqItem.Finger]; ok {
+				style = st
+			} else {
+				style = fingerBgStyles[0]
 			}
-		}
-	} else if props.ShowAll && props.ScaleConfig != nil {
-		// MODE 'TAB'
-		root := parseNoteSimple(props.ScaleConfig.Root)
-		for s := 0; s < 6; s++ {
-			for f := 0; f <= props.FretCount; f++ {
-				note := theory.CalculateNote(props.Tuning[s], f)
-				if theory.IsNoteInScale(note, root, props.ScaleConfig.Scale) {
-					key := fmt.Sprintf("%d_%d", s, f)
-					grid[key] = cellData{
-						text:     fmt.Sprintf("%-3s", theory.NoteNames[note]),
-						style:    lipgloss.NewStyle().Foreground(theory.NoteColors[note]),
-						priority: 1,
-					}
-				}
-			}
+			grid[key] = cellData{text: text, style: style, priority: 1}
 		}
 	}
 
 	// ==========================================================
-	// LAYER 1: UPCOMING (Dự báo)
+	// LAYER 1: UPCOMING
 	// ==========================================================
-
-	// FIX LOGIC: Nếu đang bật ShowScaleShape (S) thì KHÔNG hiện Upcoming nữa cho đỡ rối
 	if !props.ShowScaleShape {
 		for key, item := range props.UpcomingMarkers {
 			if item.Distance > 3 {
 				continue
 			}
 			symbol := upcomingPatterns[item.Distance-1]
-
 			var style lipgloss.Style
 			if s, ok := fingerFgStyles[item.Finger]; ok {
 				style = s
 			} else {
 				style = fingerFgStyles[0]
 			}
-
 			if item.Distance == 1 {
 				style = style.Copy().Bold(true)
 			} else {
 				style = style.Copy().Faint(true)
 			}
-
 			grid[key] = cellData{text: symbol, style: style, priority: 2}
 		}
 	}
 
 	// ==========================================================
-	// LAYER 2: ACTIVE (Đang đánh)
+	// LAYER 2: ACTIVE
 	// ==========================================================
 	for _, item := range props.ActiveItems {
 		m := item.Marker
 		key := fmt.Sprintf("%d_%d", m.StringIndex, m.Fret)
-
 		var displayText string
 		var style lipgloss.Style
 
 		if props.ShowScaleShape {
-			// MODE 'S': Active Note
-			// FIX LAYOUT: Dùng hàm format 3 ký tự cho số thứ tự
 			displayText = formatOrder3Chars(item.Order)
-
 			if s, ok := fingerFgStyles[m.Finger]; ok {
 				style = s
 			} else {
 				style = fingerFgStyles[0]
 			}
 			style = style.Copy().Underline(true)
-
 		} else if props.ShowFingers {
-			// MODE 'H'
 			if m.Finger > 0 {
 				displayText = fmt.Sprintf(" %d ", m.Finger)
 				if s, ok := fingerBgStyles[m.Finger]; ok {
@@ -214,14 +163,12 @@ func RenderFretboard(props FretboardProps) string {
 				style = fingerBgStyles[0]
 			}
 		} else {
-			// STANDARD
 			displayText = fmt.Sprintf(" %-2s", theory.NoteNames[m.Note])
 			style = activeNoteStyle
 			if m.Fret == 0 {
 				style = activeOpenStringStyle
 			}
 		}
-
 		grid[key] = cellData{text: displayText, style: style, priority: 3}
 	}
 
@@ -235,15 +182,46 @@ func RenderFretboard(props FretboardProps) string {
 	b.WriteString("\n")
 
 	stringLabels := []string{"E", "A", "D", "G", "B", "e"}
+
+	// Loop vẽ dây (5 -> 0)
 	for s := 5; s >= 0; s-- {
 		b.WriteString(nutStyle.Render(fmt.Sprintf(" %s ║", stringLabels[s])))
+
 		for f := 0; f <= props.FretCount; f++ {
 			key := fmt.Sprintf("%d_%d", s, f)
+
 			if cell, exists := grid[key]; exists {
+				// Có dữ liệu -> Vẽ ô có màu
 				b.WriteString(cell.style.Render(cell.text))
 				b.WriteString(fretLineStyle.Render("|"))
 			} else {
-				b.WriteString(fretLineStyle.Render("---|"))
+				// Ô Trống -> Xử lý Inlay (Chấm tròn) ở đây
+				content := "---" // Mặc định dây
+
+				// Logic vẽ Inlay
+				isSingle := singleDotFrets[f]
+				isDouble := doubleDotFrets[f]
+
+				if isDouble {
+					// 2 Chấm: Vẽ ở dây 1, 2, 3, 4 (A, D, G, B) - Chừa 2 dây ngoài
+					if s >= 1 && s <= 4 {
+						content = " ○ "
+					}
+				} else if isSingle {
+					// 1 Chấm: Vẽ ở dây 2, 3 (D, G) - Giữa cần đàn
+					if s == 2 || s == 3 {
+						content = " ○ "
+					}
+				}
+
+				// Render inlay với màu mờ (inlayStyle) hoặc màu dây (fretLineStyle)
+				if content == "-○-" {
+					b.WriteString(inlayStyle.Render(content))
+				} else {
+					b.WriteString(fretLineStyle.Render(content))
+				}
+
+				b.WriteString(fretLineStyle.Render("|"))
 			}
 		}
 		b.WriteString("\n")

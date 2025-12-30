@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"guitui/internal/audio"
 	"guitui/internal/lesson"
 	"guitui/internal/theory"
 	"guitui/internal/ui/components"
@@ -42,15 +43,23 @@ type Model struct {
 
 	// UI State
 	list            list.Model
-	tuning          []theory.Note
-	width, height   int
-	fretCount       int
-	metronomeActive bool
+	tuning        []theory.Note
+	width, height int
+	fretCount     int
 
 	// Display Modes
 	showAll        bool // Tab Mode (Note Names) - Phím Tab
 	showFingers    bool // Finger Helper Mode - Phím H
 	showScaleShape bool // Sequence/Shape Mode - Phím S
+	showUpcoming   bool // Toggle upcoming markers - Phím U
+
+	// Metronome State
+	metronomeActive    bool
+	metroPlayer        *audio.MetronomePlayer
+	metronomeUIMode    bool // Toggle metronome settings UI
+	metroBPM           int
+	metroTimeSignature audio.TimeSignature
+	metroSoundType     string
 }
 
 func NewModel() Model {
@@ -83,13 +92,21 @@ func NewModel() Model {
 	l.Styles.Title = lipgloss.NewStyle().Foreground(theory.CatMauve).Bold(true).Padding(0, 1)
 
 	// 3. Default Lesson
+	// 3. Default Lesson (first lesson from list)
 	firstLesson := lesson.Lesson{}
 	if len(loadedLessons) > 0 {
 		firstLesson = loadedLessons[0]
-		// Generate Steps ngay nếu có Generator
-		if firstLesson.Generator != nil {
-			firstLesson.Steps, _ = lesson.GenerateSteps(firstLesson.Generator)
-		}
+	}
+
+	metroPlayer, err := audio.NewMetronomePlayer(&audio.MetronomeConfig{
+		BPM:           120,
+		TimeSignature: audio.TimeSig4_4,
+		AccentFirst:   true,
+		Volume:        80,
+		SoundType:     "wood",
+	})
+	if err != nil {
+		fmt.Println("Lỗi khởi tạo metronome:", err)
 	}
 
 	return Model{
@@ -99,11 +116,17 @@ func NewModel() Model {
 		tuning:          theory.StandardTuning,
 		fretCount:       12,
 		metronomeActive: false,
+		metroPlayer:     metroPlayer,
+		metronomeUIMode: false,
+		metroBPM:        120,
+		metroTimeSignature: audio.TimeSig4_4,
+		metroSoundType:     "wood",
 
 		// Default States
 		showAll:        false,
 		showFingers:    false,
 		showScaleShape: false,
+		showUpcoming:   true,
 	}
 }
 
@@ -130,48 +153,129 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "tab":
 			m.showAll = !m.showAll
-			// Nếu bật Tab (Note names) thì tắt Shape đi cho đỡ loạn
+			// Nếu bật Tab (Note names) thì tắt Shape và Upcoming đi cho đỡ loạn
 			if m.showAll {
 				m.showScaleShape = false
+				m.showUpcoming = false
+			} else {
+				m.showUpcoming = true
 			}
 
 		case "h", "H":
 			m.showFingers = !m.showFingers
 
-		case "s", "S":
-			m.showScaleShape = !m.showScaleShape
-			// Nếu bật Shape (Sequence) thì tắt Tab đi
-			if m.showScaleShape {
-				m.showAll = false
-			}
-
 		case " ": // Space: Toggle Play/Pause
 			m.metronomeActive = !m.metronomeActive
 			if m.metronomeActive {
-				cmds = append(cmds, tick(m.currentLesson.BPM))
+				if m.metroPlayer != nil {
+					m.metroPlayer.Play()
+				}
+				cmds = append(cmds, tick(m.metroBPM))
+			} else {
+				if m.metroPlayer != nil {
+					m.metroPlayer.Pause()
+				}
+			}
+
+		case "m", "M": // Toggle metronome UI settings
+			m.metronomeUIMode = !m.metronomeUIMode
+
+		case "+", "=": // Increase BPM
+			if m.metronomeUIMode {
+				m.metroBPM += 5
+				if m.metroBPM > 240 {
+					m.metroBPM = 240
+				}
+				if m.metroPlayer != nil {
+					m.metroPlayer.SetBPM(m.metroBPM)
+				}
+			}
+
+		case "-", "_": // Decrease BPM
+			if m.metronomeUIMode {
+				m.metroBPM -= 5
+				if m.metroBPM < 40 {
+					m.metroBPM = 40
+				}
+				if m.metroPlayer != nil {
+					m.metroPlayer.SetBPM(m.metroBPM)
+				}
+			}
+
+		case "1": // Set 4/4 time signature
+			if m.metronomeUIMode {
+				m.metroTimeSignature = audio.TimeSig4_4
+				if m.metroPlayer != nil {
+					m.metroPlayer.SetTimeSignature(audio.TimeSig4_4)
+				}
+			}
+
+		case "2": // Set 3/4 time signature
+			if m.metronomeUIMode {
+				m.metroTimeSignature = audio.TimeSig3_4
+				if m.metroPlayer != nil {
+					m.metroPlayer.SetTimeSignature(audio.TimeSig3_4)
+				}
+			}
+
+		case "3": // Set 6/8 time signature
+			if m.metronomeUIMode {
+				m.metroTimeSignature = audio.TimeSig6_8
+				if m.metroPlayer != nil {
+					m.metroPlayer.SetTimeSignature(audio.TimeSig6_8)
+				}
+			}
+
+		case "4": // Set 2/4 time signature
+			if m.metronomeUIMode {
+				m.metroTimeSignature = audio.TimeSig2_4
+				if m.metroPlayer != nil {
+					m.metroPlayer.SetTimeSignature(audio.TimeSig2_4)
+				}
+			}
+
+		case "s": // Cycle sound types when in metronome mode
+			if m.metronomeUIMode {
+				soundTypes := []string{"wood", "mechanical", "digital"}
+				currentIdx := 0
+				for i, st := range soundTypes {
+					if st == m.metroSoundType {
+						currentIdx = i
+						break
+					}
+				}
+				nextIdx := (currentIdx + 1) % len(soundTypes)
+				m.metroSoundType = soundTypes[nextIdx]
+				if m.metroPlayer != nil {
+					m.metroPlayer.SetSoundType(m.metroSoundType)
+				}
+			} else {
+				// Original S key behavior for scale shape
+				m.showScaleShape = !m.showScaleShape
+				if m.showScaleShape {
+					m.showAll = false
+				}
+			}
+
+		case "S": // Keep uppercase S for scale shape always
+			m.showScaleShape = !m.showScaleShape
+			if m.showScaleShape {
+				m.showAll = false
 			}
 
 		case "enter": // Chọn bài
 			if selectedItem, ok := m.list.SelectedItem().(item); ok {
 				m.currentLesson = selectedItem.lesson
-
-				// Generate Steps nếu chưa có
-				if len(m.currentLesson.Steps) == 0 && m.currentLesson.Generator != nil {
-					steps, err := lesson.GenerateSteps(m.currentLesson.Generator)
-					if err == nil {
-						m.currentLesson.Steps = steps
-					}
-				}
-
-				// Reset
 				m.currentStep = 0
 
-				// FIX BUG TĂNG TỐC ĐỘ: Chỉ start tick mới nếu đang dừng
 				if !m.metronomeActive {
 					m.metronomeActive = true
-					cmds = append(cmds, tick(m.currentLesson.BPM))
+					cmds = append(cmds, tick(m.metroBPM))
 				}
 			}
+
+		case "u", "U": // Toggle upcoming markers
+			m.showUpcoming = !m.showUpcoming
 		}
 
 	case tea.WindowSizeMsg:
@@ -191,7 +295,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case TickMsg:
 		if m.metronomeActive && len(m.currentLesson.Steps) > 0 {
 			m.currentStep = (m.currentStep + 1) % len(m.currentLesson.Steps)
-			cmds = append(cmds, tick(m.currentLesson.BPM))
+			cmds = append(cmds, tick(m.metroBPM))
 		}
 	}
 
@@ -226,7 +330,7 @@ func (m Model) View() string {
 	// B. Upcoming Markers (Lookahead 3 bước)
 	upcoming := make(map[string]components.UpcomingItem)
 	lookAhead := 3
-	if len(steps) > 0 {
+	if m.showUpcoming && len(steps) > 0 {
 		for i := 1; i <= lookAhead; i++ {
 			nextIdx := (m.currentStep + i) % len(steps)
 			for _, marker := range steps[nextIdx].Markers {
@@ -258,12 +362,23 @@ func (m Model) View() string {
 		}
 	}
 
+	// D. All Notes Map (for Tab mode - show note names)
+	allNotesMap := make(map[string]theory.Note)
+	if m.showAll && len(steps) > 0 {
+		for _, step := range steps {
+			for _, marker := range step.Markers {
+				key := fmt.Sprintf("%d_%d", marker.StringIndex, marker.Fret)
+				allNotesMap[key] = marker.Note
+			}
+		}
+	}
+
 	fretProps := components.FretboardProps{
 		ActiveItems:     activeItems,
 		UpcomingMarkers: upcoming,
 		ScaleSequence:   scaleSequence,
+		AllNotes:        allNotesMap,
 		Tuning:          m.tuning,
-		ScaleConfig:     m.currentLesson.Generator,
 		ShowAll:         m.showAll,
 		FretCount:       m.fretCount,
 		ShowFingers:     m.showFingers,
@@ -296,38 +411,80 @@ func (m Model) View() string {
 	// Bottom Section: Fretboard + Metronome
 	fretboardView := components.RenderFretboard(fretProps)
 
-	// Metronome (4 beat pattern)
-	metroView := components.RenderMetronome(m.currentStep%4, 4, m.currentLesson.BPM)
+	// Metronome display
+	var metroDisplay string
+	totalBeats := 4
+	switch m.metroTimeSignature {
+	case audio.TimeSig3_4:
+		totalBeats = 3
+	case audio.TimeSig6_8:
+		totalBeats = 6
+	case audio.TimeSig2_4:
+		totalBeats = 2
+	}
+	
+	if m.metronomeUIMode {
+		// Show metronome settings UI
+		metroDisplay = components.RenderMetronomeSettings(m.metroBPM, m.metroTimeSignature, m.metroSoundType, m.metronomeActive)
+	} else {
+		// Show simple metronome bar
+		currentBeat := 0
+		if m.metroPlayer != nil {
+			currentBeat = m.metroPlayer.GetCurrentBeat()
+		}
+		metroDisplay = components.RenderMetronome(currentBeat, totalBeats, m.metroBPM)
+	}
 
 	// Status Bar
 	playStatus := "Play "
 	if m.metronomeActive {
 		playStatus = "Pause"
 	}
-	helpText := fmt.Sprintf("[Space] %s  [H] Fing(%s)  [S] Seq(%s)  [Tab] Note(%s)  [F] Fret(%d)",
-		playStatus, status(m.showFingers), status(m.showScaleShape), status(m.showAll), m.fretCount)
+	helpText := fmt.Sprintf("[Space] %s  [M] Metro  [H] Fing(%s)  [S] Seq(%s)  [Tab] Note(%s)  [U] Upc(%s)  [F] Fret(%d)",
+		playStatus, status(m.showFingers), status(m.showScaleShape), status(m.showAll), status(m.showUpcoming), m.fretCount)
 	helpView := lipgloss.NewStyle().Foreground(theory.CatSubtext1).Render(helpText)
 
 	infoBar := lipgloss.NewStyle().
 		Foreground(theory.CatSky).Bold(true).
 		Render(fmt.Sprintf("PLAYING: %s (Step %d/%d)", m.currentLesson.Title, m.currentStep+1, len(steps)))
 
+	// Build bottom section (fretboard + metronome bar)
 	bottomSection := lipgloss.JoinVertical(lipgloss.Left,
 		lipgloss.NewStyle().Padding(0, 1).Render(infoBar),
 		lipgloss.NewStyle().Render(fretboardView),
 		lipgloss.JoinHorizontal(lipgloss.Top,
-			lipgloss.NewStyle().PaddingLeft(2).Render(metroView),
+			lipgloss.NewStyle().PaddingLeft(2).Render(metroDisplay),
 			lipgloss.NewStyle().PaddingLeft(4).Render(helpView),
 		),
 	)
 
-	return lipgloss.JoinVertical(lipgloss.Left, topContainer, bottomSection)
+	mainView := lipgloss.JoinVertical(lipgloss.Left, topContainer, bottomSection)
+
+	// If metronome settings mode, overlay the settings panel centered
+	if m.metronomeUIMode {
+		// Center the settings panel on screen
+		return lipgloss.Place(m.width, m.height, 
+			lipgloss.Center, lipgloss.Center,
+			metroDisplay)
+	}
+
+	return mainView
 }
 
 func tick(bpm int) tea.Cmd {
 	return tea.Tick(time.Duration(60000/bpm)*time.Millisecond, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})
+}
+
+func parseNote(n string) theory.Note {
+	n = strings.TrimSpace(n)
+	for i, name := range theory.NoteNames {
+		if strings.EqualFold(name, n) {
+			return theory.Note(i)
+		}
+	}
+	return theory.C
 }
 
 func status(b bool) string {

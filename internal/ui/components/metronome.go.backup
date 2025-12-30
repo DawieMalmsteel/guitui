@@ -1,0 +1,221 @@
+package components
+
+import (
+	"fmt"
+	"strings"
+
+	"guitui/internal/theory"
+	"guitui/internal/audio"
+
+	"github.com/charmbracelet/lipgloss"
+	"time"
+)
+
+var (
+	bpmLabelStyle = lipgloss.NewStyle().Foreground(theory.CatSky).Bold(true).PaddingRight(1)
+
+	downBeatStyle = lipgloss.NewStyle().Foreground(theory.CatRed).SetString(" ■ ")
+
+	upBeatStyle = lipgloss.NewStyle().Foreground(theory.CatYellow).SetString(" ■ ")
+
+	inactiveStyle = lipgloss.NewStyle().Foreground(theory.CatSurface1).SetString(" □ ")
+
+	timeSigLabelStyle = lipgloss.NewStyle().Foreground(theory.CatText).Bold(true)
+
+	soundTypeLabelStyle = lipgloss.NewStyle().Foreground(theory.CatMauve).Bold(true)
+
+	volumeLabelStyle = lipgloss.NewStyle().Foreground(theory.CatSubtext1).Bold(true)
+
+	accentLabelStyle = lipgloss.NewStyle().Foreground(theory.CatGreen).Bold(true)
+
+	offLabelStyle    = lipgloss.NewStyle().Foreground(theory.CatSurface1).SetString("(OFF)")
+
+	onLabelStyle      = lipgloss.NewStyle().Foreground(theory.CatGreen).Bold(true)
+
+	highlightStyle = lipgloss.NewStyle().Foreground(theory.CatPeach).Bold(true).Background(theory.CatCrust)
+
+	normalStyle = lipgloss.NewStyle().Foreground(theory.CatText)
+
+	dimStyle = lipgloss.NewStyle().Foreground(theory.CatSubtext1)
+
+	selectedStyle = lipgloss.NewStyle().Background(theory.CatBlue).Foreground(theory.CatText)
+
+	fadedStyle = lipgloss.NewStyle().Faint(true)
+
+	separatorStyle = lipgloss.NewStyle().Foreground(theory.CatOverlay1)
+
+	metroBoxStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(0, 1)
+
+	metroTitleStyle = lipgloss.NewStyle().Foreground(theory.CatRed).Bold(true).Padding(0, 1)
+
+	metroInfoStyle = lipgloss.NewStyle().Foreground(theory.CatSky)
+
+	optionLabelStyle = lipgloss.NewStyle().Foreground(theory.CatSubtext1).Width(10)
+
+	valueStyle = lipgloss.NewStyle().Foreground(theory.CatGreen)
+
+	toggleButtonStyle = lipgloss.NewStyle().Foreground(theory.CatBlue).Background(theory.CatBase).Bold(true).Width(13).Padding(0, 1)
+
+	arrowStyle = lipgloss.NewStyle().Foreground(theory.CatText)
+
+	spaceKeyStyle = lipgloss.NewStyle().Foreground(theory.CatPeach).Bold(true).Width(13)
+
+	plusKeyStyle   = lipgloss.NewStyle().Foreground(theory.CatBlue).Bold(true).Width(15).Padding(0, 1)
+
+	minusKeyStyle = lipgloss.NewStyle().Foreground(theory.CatText).Width(15).Padding(0, 1)
+
+	mutedStyle = lipgloss.NewStyle().Foreground(theory.CatOverlay1).Faint(true)
+
+	enabledStyle = lipgloss.NewStyle().Foreground(theory.CatGreen).Bold(true)
+
+	warningStyle = lipgloss.NewStyle().Foreground(theory.CatRed).Bold(true)
+
+	infoStyle = lipgloss.NewStyle().Foreground(theory.CatSky)
+
+	selectedValueStyle = lipgloss.NewStyle().Background(theory.CatBlue).Foreground(theory.CatText)
+
+	unselectedValueStyle = lipgloss.NewStyle().Faint(true)
+
+	rightArrowStyle = lipgloss.NewStyle().Foreground(theory.CatText)
+
+	leftArrowStyle = lipgloss.NewStyle().Foreground(theory.CatText)
+
+	dividerStyle = lipgloss.NewStyle().Foreground(theory.CatOverlay1)
+)
+
+	boxStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1)
+
+	smallBoxStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 0, 0, 0, 0)
+)
+
+	helpHeaderStyle = lipgloss.NewStyle().Foreground(theory.CatMauve).Bold(true).Underline(true)
+)
+
+	helpKeyStyle = lipgloss.NewStyle().Foreground(theory.CatSky).Bold(true)
+
+	helpValueStyle = lipgloss.NewStyle().Foreground(theory.CatGreen)
+)
+
+	helpDescStyle = lipgloss.NewStyle().Foreground(theory.CatSubtext1)
+)
+
+	metronomeTitleStyle = lipgloss.NewStyle().Foreground(theory.CatRed).Bold(true)
+)
+
+	metronomeStateStyle = lipgloss.NewStyle().Foreground(theory.CatYellow)
+
+	titleStyle = lipgloss.NewStyle().Foreground(theory.CatPeach).Bold(true).Underline(true)
+
+	shortCutStyle = lipgloss.NewStyle().Foreground(theory.CatGreen)
+
+	activeBeatStyle = lipgloss.NewStyle().Background(theory.CatCrust).Foreground(theory.CatGreen)
+
+	inactiveBeatStyle = lipgloss.NewStyle().Foreground(theory.CatSurface1).SetString("■ ")
+)
+
+	currentBeatStyle = lipgloss.NewStyle().Background(theory.CatBlue).Foreground(theory.CatText).SetString("■ ")
+)
+
+	hiddenCursorStyle = lipgloss.NewStyle().Hidden()
+)
+
+	visibleCursorStyle = lipgloss.NewStyle().Visible()
+)
+
+	scanDisabledStyle = lipgloss.NewStyle().Faint(true)
+)
+
+	loadingTextStyle = lipgloss.NewStyle().Faint(true).Italic(true)
+)
+
+	errorStyle = lipgloss.NewStyle().Foreground(theory.CatRed).Bold(true)
+)
+
+	successStyle = lipgloss.NewStyle().Foreground(theory.CatGreen).Bold(true)
+
+	warnStyle = lipgloss.NewStyle().Foreground(theory.CatYellow).Bold(true)
+)
+
+	scrollbarStyle = lipgloss.NewStyle().Foreground(theory.CatSubtext1)
+
+	frameStyle = lipgloss.NewStyle().Border(lipgloss.DoubleBorder())
+)
+
+	sectionStyle = lipgloss.NewStyle().Foreground(theory.CatMauve).Bold(true).MarginTop(1)
+)
+
+	keyLabelStyle = lipgloss.NewStyle().Foreground(theory.CatSky).Bold(true).Padding(0, 1)
+
+	valueLabelStyle = lipgloss.NewStyle().Foreground(theory.CatText)
+)
+
+	shortcutHintStyle = lipgloss.NewStyle().Foreground(theory.CatYellow).Faint(true)
+
+	shortcutKeyStyle = lipgloss.NewStyle().Foreground(theory.CatBlue).Bold(true)
+
+	shortcutValueStyle = lipgloss.NewStyle().Foreground(theory.CatText).Bold(true)
+
+	shortcutDescStyle = lipgloss.NewStyle().Foreground(theory.CatSubtext1)
+
+	dividerStyle = lipgloss.NewStyle().Foreground(theory.CatOverlay1)
+
+	footerStyle = lipgloss.NewStyle().Foreground(theory.CatSubtext1).Faint(true)
+)
+
+	headerStyle = lipgloss.NewStyle().Foreground(theory.CatSky).Bold(true).Padding(0, 1)
+
+	spinnerStyle = lipgloss.NewStyle().Foreground(theory.CatGreen)
+)
+
+	emptyStateStyle = lipgloss.NewStyle().Foreground(theory.CatSurface1)
+)
+
+	listStyle = lipgloss.NewStyle().Foreground(theory.CatMauve).Bold(true)
+
+	buttonBaseStyle = lipgloss.NewStyle().Foreground(theory.CatBlue).Background(theory.CatBase).Bold(true)
+
+	buttonHoverStyle = lipgloss.NewStyle().Foreground(theory.CatBlue).Background(theory.CatBase).Bold(true)
+
+	buttonActiveStyle = lipgloss.NewStyle().Foreground(theory.CatBlue).Background(theory.CatBase).Bold(true)
+
+	buttonDisabledStyle = lipgloss.NewStyle().Foreground(theory.CatSurface1).Background(theory.CatBase).Bold(true)
+
+	checkboxCheckedStyle = lipgloss.NewStyle().Foreground(theory.CatGreen).Background(theory.CatBase)
+
+	checkboxUncheckedStyle = lipgloss.NewStyle().Foreground(theory.CatSurface1).Background(theory.CatBase)
+
+	separatorStyle = lipgloss.NewStyle().Foreground(theory.CatOverlay1)
+
+	dialogStyle = lipgloss.NewStyle().Foreground(theory.CatBlue).Background(theory.CatBase).Padding(1, 1)
+)
+
+var (
+	bpmLabelStyle = lipgloss.NewStyle().Foreground(theory.CatSky).Bold(true).PaddingRight(1)
+
+	// Downbeat (Phách 1) - Màu Đỏ
+	downBeatStyle = lipgloss.NewStyle().Foreground(theory.CatRed).SetString(" ■ ")
+
+	// Upbeat (Phách thường) - Màu Vàng
+	upBeatStyle = lipgloss.NewStyle().Foreground(theory.CatYellow).SetString(" ■ ")
+
+	// Inactive - Màu nền tối
+	inactiveStyle = lipgloss.NewStyle().Foreground(theory.CatSurface1).SetString(" □ ")
+)
+
+func RenderMetronome(currentBeat int, totalBeats int, bpm int) string {
+	var b strings.Builder
+	b.WriteString(bpmLabelStyle.Render(fmt.Sprintf("BPM: %d ┃", bpm)))
+
+	for i := 0; i < totalBeats; i++ {
+		if i == currentBeat {
+			if i == 0 {
+				b.WriteString(downBeatStyle.String())
+			} else {
+				b.WriteString(upBeatStyle.String())
+			}
+		} else {
+			b.WriteString(inactiveStyle.String())
+		}
+	}
+	return b.String()
+}
