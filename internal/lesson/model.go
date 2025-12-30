@@ -10,6 +10,7 @@ type Marker struct {
 	Fret        int         `json:"fret"`
 	Finger      int         `json:"finger"` // 0: Open, 1-4: Ngón tay
 	Note        theory.Note `json:"-"`      // Calculated at runtime
+	Beat        int         `json:"-"`      // Optional manual beat number (used during parsing)
 }
 
 // Step: Một bước trong bài học (ví dụ 1 beat đánh 1 nốt hoặc 1 hợp âm)

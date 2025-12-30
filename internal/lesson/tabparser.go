@@ -127,60 +127,99 @@ func (p *TabParser) buildLesson() (*Lesson, error) {
 	return lesson, nil
 }
 
-// parseSteps parses tab lines column by column to extract beats
+// parseSteps parses tab lines by splitting on | delimiter
 func (p *TabParser) parseSteps() []Step {
 	if len(p.tabLines) == 0 {
 		return []Step{}
 	}
 
-	// Find max length
-	maxLen := 0
-	for _, line := range p.tabLines {
-		if len(line) > maxLen {
-			maxLen = len(line)
+	// Split each line by | delimiter
+	beatCells := make(map[int][]string) // stringIdx -> array of beat cells
+	maxBeats := 0
+
+	for stringIdx := 0; stringIdx < 6; stringIdx++ {
+		line, exists := p.tabLines[stringIdx]
+		if !exists {
+			continue
+		}
+
+		// Split by | delimiter - each cell between | is one beat
+		cells := strings.Split(line, "|")
+		
+		// Keep ALL cells between pipes, including empty ones (they are rest beats)
+		// Only remove the very first and very last if they're from string start/end
+		var filteredCells []string
+		for i, cell := range cells {
+			// Skip first cell if it's from before the first |
+			if i == 0 && strings.TrimSpace(cell) == "" {
+				continue
+			}
+			// Skip last cell if it's from after the final |
+			if i == len(cells)-1 && strings.TrimSpace(cell) == "" {
+				continue
+			}
+			// Keep everything else, including empty cells (rest beats)
+			filteredCells = append(filteredCells, cell)
+		}
+
+		beatCells[stringIdx] = filteredCells
+		if len(filteredCells) > maxBeats {
+			maxBeats = len(filteredCells)
 		}
 	}
 
-	// Scan column by column
+	// Process each beat (column of cells)
 	steps := []Step{}
 	beatNumber := 1
 
-	for col := 0; col < maxLen; col++ {
-		markers := []Marker{}
-		skip := false
+	for beatIdx := 0; beatIdx < maxBeats; beatIdx++ {
+		// Check if this is a skip beat (all cells empty)
+		allEmpty := true
+		beatMarkers := []Marker{}
 
-		// Check each string at this column
 		for stringIdx := 0; stringIdx < 6; stringIdx++ {
-			line, exists := p.tabLines[stringIdx]
-			if !exists || col >= len(line) {
+			cells, exists := beatCells[stringIdx]
+			if !exists {
+				// String line doesn't exist, treat as empty for all beats
 				continue
 			}
-
-			// Check for skip marker
-			if col+1 < len(line) && line[col:col+2] == "sk" {
-				skip = true
-				continue
+			
+			var cell string
+			if beatIdx >= len(cells) {
+				// This string has fewer beats, treat as empty
+				cell = ""
+			} else {
+				cell = strings.TrimSpace(cells[beatIdx])
 			}
+			
+			// Remove all dashes (visual only)
+			cell = strings.ReplaceAll(cell, "-", "")
+			cell = strings.TrimSpace(cell)
 
-			// Check if note starts at this column
-			if marker := p.parseNoteAt(stringIdx, line, col); marker != nil {
-				markers = append(markers, *marker)
+			if cell != "" {
+				allEmpty = false
+				// Parse notes in this cell
+				marker := p.parseCell(stringIdx, cell)
+				if marker != nil {
+					beatMarkers = append(beatMarkers, *marker)
+				}
 			}
 		}
 
-		// Create step if we have markers or skip
-		if len(markers) > 0 {
-			step := Step{
-				Beat:    beatNumber,
-				Markers: markers,
-			}
-			steps = append(steps, step)
-			beatNumber++
-		} else if skip {
-			// Skip beat (rest) - create empty step
+		// If all cells are empty, it's a skip beat
+		if allEmpty {
+			// Create empty step (rest)
 			step := Step{
 				Beat:    beatNumber,
 				Markers: []Marker{},
+			}
+			steps = append(steps, step)
+			beatNumber++
+		} else if len(beatMarkers) > 0 {
+			// Create ONE step with all markers in this beat
+			step := Step{
+				Beat:    beatNumber,
+				Markers: beatMarkers,
 			}
 			steps = append(steps, step)
 			beatNumber++
@@ -190,33 +229,29 @@ func (p *TabParser) parseSteps() []Step {
 	return steps
 }
 
-// parseNoteAt checks if a note starts at the given column position
-func (p *TabParser) parseNoteAt(stringIdx int, line string, col int) *Marker {
-	if col >= len(line) {
+// parseCell parses a single beat cell for one string
+// Cell format examples: "5(f1)", "7", "x", "12(f3)", ""
+func (p *TabParser) parseCell(stringIdx int, cell string) *Marker {
+	cell = strings.TrimSpace(cell)
+	
+	if cell == "" {
 		return nil
 	}
 
-	char := line[col]
-
-	// Skip if it's a dash, space, or pipe
-	if char == '-' || char == ' ' || char == '|' {
-		return nil
+	// Check for muted note
+	if cell == "x" || cell == "X" {
+		return &Marker{
+			StringIndex: stringIdx,
+			Fret:        -1, // Special value for muted
+			Finger:      0,
+			Note:        theory.C, // Placeholder
+		}
 	}
 
-	// Check if it's a digit (start of fret number)
-	if char >= '0' && char <= '9' {
-		// Don't parse if previous char was also a digit (we're in middle of number)
-		if col > 0 && line[col-1] >= '0' && line[col-1] <= '9' {
-			return nil
-		}
-		
-		// Don't parse if previous char was 'f' (we're the finger number)
-		if col > 0 && line[col-1] == 'f' {
-			return nil
-		}
-
-		// Extract full fret number and optional finger
-		fret, finger, _ := p.extractFretAndFinger(line, col)
+	// Check if starts with a digit (fret number)
+	if len(cell) > 0 && cell[0] >= '0' && cell[0] <= '9' {
+		// Extract fret and optional finger
+		fret, finger := p.extractFretFinger(cell)
 
 		// Calculate note
 		openNote := theory.StandardTuning[stringIdx]
@@ -230,30 +265,20 @@ func (p *TabParser) parseNoteAt(stringIdx int, line string, col int) *Marker {
 		}
 	}
 
-	// Check for muted note
-	if char == 'x' || char == 'X' {
-		return &Marker{
-			StringIndex: stringIdx,
-			Fret:        -1, // Special value for muted
-			Finger:      0,
-			Note:        theory.C, // Placeholder
-		}
-	}
-
 	return nil
 }
 
-// extractFretAndFinger parses fret number and optional finger from position
-func (p *TabParser) extractFretAndFinger(line string, start int) (fret, finger int, end int) {
+// extractFretFinger parses fret number and optional finger from cell string
+// Supports: "5", "5(f1)", "12(f3)"
+func (p *TabParser) extractFretFinger(cell string) (fret, finger int) {
 	fret = 0
 	finger = 0
-	end = start
 
 	// Parse fret number (can be multi-digit: 10, 12, etc.)
 	fretStr := ""
-	i := start
-	for i < len(line) && line[i] >= '0' && line[i] <= '9' {
-		fretStr += string(line[i])
+	i := 0
+	for i < len(cell) && cell[i] >= '0' && cell[i] <= '9' {
+		fretStr += string(cell[i])
 		i++
 	}
 
@@ -261,22 +286,26 @@ func (p *TabParser) extractFretAndFinger(line string, start int) (fret, finger i
 		fret, _ = strconv.Atoi(fretStr)
 	}
 
-	end = i
+	// Check for finger notation in parentheses
+	if i < len(cell) && cell[i] == '(' {
+		// Find closing parenthesis
+		closeIdx := strings.Index(cell[i:], ")")
+		if closeIdx != -1 {
+			closeIdx += i
+			content := cell[i+1 : closeIdx]
 
-	// Check for finger notation: "f1" or "(1)"
-	if i < len(line) {
-		if line[i] == 'f' && i+1 < len(line) && line[i+1] >= '0' && line[i+1] <= '9' {
-			// Format: 5f1
-			finger, _ = strconv.Atoi(string(line[i+1]))
-			end = i + 2
-		} else if line[i] == '(' && i+2 < len(line) && line[i+1] >= '0' && line[i+1] <= '9' && line[i+2] == ')' {
-			// Format: 5(1)
-			finger, _ = strconv.Atoi(string(line[i+1]))
-			end = i + 3
+			// Parse content: "f1" or just "1" (legacy)
+			if len(content) == 1 && content[0] >= '0' && content[0] <= '9' {
+				// Legacy format: (1) means finger 1
+				finger, _ = strconv.Atoi(content)
+			} else if strings.HasPrefix(content, "f") && len(content) > 1 {
+				// Modern format: (f1)
+				finger, _ = strconv.Atoi(content[1:])
+			}
 		}
 	}
 
-	return fret, finger, end
+	return fret, finger
 }
 
 // LoadTabDirectory loads all .tab files from a directory

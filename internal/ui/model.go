@@ -321,55 +321,29 @@ func (m Model) View() string {
 		return "Loading..."
 	}
 
-	steps := m.currentLesson.Steps
-
 	// --- 1. PREPARE FRETBOARD PROPS ---
-
-	// A. Active Items (Thêm Order cho Mode S nháy)
+	
+	// Build fretboard data using optimized builder
+	builder := NewFretboardDataBuilder(&m.currentLesson, m.currentStep)
+	
 	var activeItems []components.ActiveItem
-	if len(steps) > 0 {
-		markers := steps[m.currentStep].Markers
-		for _, marker := range markers {
-			activeItems = append(activeItems, components.ActiveItem{
-				Marker: marker,
-				Order:  m.currentStep + 1, // 1-based index
-			})
-		}
+	var upcoming map[string]components.UpcomingItem
+	var scaleSequence map[string]components.SequenceItem
+	
+	// Only build what we need based on display modes
+	activeItems = builder.BuildActiveItems()
+	
+	if m.showUpcoming {
+		upcoming = builder.BuildUpcomingMarkers(3)
+	} else {
+		upcoming = make(map[string]components.UpcomingItem)
 	}
-
-	// B. Upcoming Markers (Lookahead 3 bước)
-	upcoming := make(map[string]components.UpcomingItem)
-	lookAhead := 3
-	if m.showUpcoming && len(steps) > 0 {
-		for i := 1; i <= lookAhead; i++ {
-			nextIdx := (m.currentStep + i) % len(steps)
-			for _, marker := range steps[nextIdx].Markers {
-				key := fmt.Sprintf("%d_%d", marker.StringIndex, marker.Fret)
-				if _, exists := upcoming[key]; !exists {
-					upcoming[key] = components.UpcomingItem{
-						Distance: i,
-						Finger:   marker.Finger,
-					}
-				}
-			}
-		}
-	}
-
-	// C. Scale Sequence (Map toàn bộ nốt trong bài để vẽ Layer 0 Mode S)
-	scaleSequence := make(map[string]components.SequenceItem)
-	if m.showScaleShape && len(steps) > 0 {
-		for i, step := range steps {
-			for _, marker := range step.Markers {
-				key := fmt.Sprintf("%d_%d", marker.StringIndex, marker.Fret)
-				// Chỉ lưu lần xuất hiện đầu tiên
-				if _, exists := scaleSequence[key]; !exists {
-					scaleSequence[key] = components.SequenceItem{
-						Order:  i + 1,
-						Finger: marker.Finger,
-					}
-				}
-			}
-		}
+	
+	if m.showScaleShape || m.showFingers || m.showAll {
+		// Need scale sequence for these modes
+		scaleSequence = builder.BuildScaleSequence()
+	} else {
+		scaleSequence = make(map[string]components.SequenceItem)
 	}
 
 	fretProps := components.FretboardProps{
@@ -444,7 +418,7 @@ func (m Model) View() string {
 
 	infoBar := lipgloss.NewStyle().
 		Foreground(theory.CatSky).Bold(true).
-		Render(fmt.Sprintf("PLAYING: %s (Step %d/%d)", m.currentLesson.Title, m.currentStep+1, len(steps)))
+		Render(fmt.Sprintf("PLAYING: %s (Step %d/%d)", m.currentLesson.Title, m.currentStep+1, len(m.currentLesson.Steps)))
 
 	// Build bottom section (fretboard + metronome bar)
 	bottomSection := lipgloss.JoinVertical(lipgloss.Left,

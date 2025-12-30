@@ -1,28 +1,39 @@
-TITLE: A Minor Pentatonic - Box 1 (Classic)
+TITLE: A Minor Pentatonic - Box 1
 BPM: 80
 KEY: A
 CATEGORY: scale
 DIFFICULTY: beginner
 TUNING: EADGBE
 
-e|-----5f1-----8f4-----|
-B|-----5f1-----7f3-----|
-G|-----5f1-----7f3-----|
-D|-----5f1-----7f3-----|
-A|-----5f1-----8f4-----|
-E|-----5f1-----8f4-----|
+e|5(f1)|-----|7(f3)|-----|8(f4)|-----|7(f3)|-----|5(f1)|
+B|--|5(f1)|-----|8(f4)|-----|8(f4)|-----|5(f1)|-----|
+G|--|5(f2)|-----|7(f4)|-----|7(f4)|-----|5(f2)|-----|
+D|---|-----|-----|5(f2)|-----|7(f4)|-----|7(f4)|-----|
+A|-|-----|-----|-----|5(f1)|-----|7(f3)|-----|7(f3)|
+E|--|-----|-----|-----|-----|5(f1)|-----|8(f4)|-----|
 
 NOTES:
-This is the classic "Box 1" position of A Minor Pentatonic.
-- All notes stay within frets 5-8
-- Index finger (1) plays all 5th fret notes
-- Ring finger (3) plays all 7th fret notes  
-- Pinky (4) plays all 8th fret notes
-- Practice ascending and descending
-- This shape is moveable to any key
+A Minor Pentatonic Scale - Box 1 Position (Frets 5-8)
+Exercise: Up and down pattern on each string
+
+Pattern per string (up then down):
+- Low E: A(5,f1) → C(8,f4) → C(8,f4) → A(5,f1)
+- A string: D(5,f1) → E(7,f3) → E(7,f3) → D(5,f1)
+- D string: G(5,f2) → A(7,f4) → A(7,f4) → G(5,f2)
+- G string: C(5,f2) → D(7,f4) → D(7,f4) → C(5,f2)
+- B string: E(5,f1) → G(8,f4) → G(8,f4) → E(5,f1)
+- High e: A(5,f1) → C(8,f4) → C(8,f4) → A(5,f1)
+
+Notes in scale: A - C - D - E - G (pentatonic)
+
+Finger positions:
+f1 = Index (all 5th fret notes on E, A, B, e strings)
+f2 = Middle (5th fret on D and G strings)
+f3 = Ring (7th fret on A string)
+f4 = Pinky (7th fret on D, G and 8th fret on E, B, e)
 
 LEGEND:
-f = finger number
-5f1 = fret 5, finger 1 (index)
-7f3 = fret 7, finger 3 (ring)
-8f4 = fret 8, finger 4 (pinky)
+5(f1) = fret 5, finger 1 (index)
+7(f3) = fret 7, finger 3 (ring)
+8(f4) = fret 8, finger 4 (pinky)
+

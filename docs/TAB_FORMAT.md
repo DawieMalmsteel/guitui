@@ -22,12 +22,12 @@ CATEGORY: scale | exercise | song | technique
 DIFFICULTY: beginner | intermediate | advanced
 TUNING: EADGBE
 
-e|--------------------------|
-B|--------------------------|
-G|--------------------------|
-D|--------------------------|
-A|--------------------------|
-E|--------------------------|
+e|-----|-----|
+B|-----|-----|
+G|-----|-----|
+D|-----|-----|
+A|-----|-----|
+E|-----|-----|
 
 NOTES:
 Optional notes about the lesson
@@ -43,12 +43,12 @@ CATEGORY: scale
 DIFFICULTY: beginner
 TUNING: EADGBE
 
-e|-----5f1-----8f4-----|
-B|-----5f1-----7f3-----|
-G|-----5f1-----7f3-----|
-D|-----5f1-----7f3-----|
-A|-----5f1-----8f4-----|
-E|-----5f1-----8f4-----|
+e|5(f1)|8(f4)|
+B|5(f1)|7(f3)|
+G|5(f1)|7(f3)|
+D|5(f1)|7(f3)|
+A|5(f1)|8(f4)|
+E|5(f1)|8(f4)|
 
 NOTES:
 - Start with index finger at 5th fret
@@ -102,17 +102,39 @@ e|--0--1--2--3--5--7--8--12--|
 etc.
 ```
 
-### Finger Numbers (Optional)
+### Beat Timing with Pipe Delimiters
 
-Add finger information using `f` notation:
+**IMPORTANT:** Beats are separated by pipe `|` delimiters. Each cell between pipes is one beat.
 
 ```
-e|--5f1--7f3--8f4--|
+e|5(f1)|7(f3)|-----|8(f4)|
+B|-----|5(f1)|7(f3)|-----|
+G|-----|-----|-----|-----|
 
-Format: {fret}f{finger}
-  5f1 = fret 5, finger 1 (index)
-  7f3 = fret 7, finger 3 (ring)
-  8f4 = fret 8, finger 4 (pinky)
+Beat 1: Note on e string (fret 5, finger 1)
+Beat 2: Notes on e and B strings together (chord)
+Beat 3: Rest (empty or dashes only)
+Beat 4: Note on e string (fret 8, finger 4)
+```
+
+**Rules:**
+- `|` separates beats
+- Notes in the same cell play together (chords)
+- Empty cells or cells with only `---` are rests
+- Dashes `-` are visual only (ignored by parser)
+- Use dashes to align tab for readability
+
+### Finger Numbers (Optional)
+
+Add finger information using parentheses notation:
+
+```
+e|5(f1)|7(f3)|8(f4)|
+
+Format: {fret}(f{finger})
+  5(f1) = fret 5, finger 1 (index)
+  7(f3) = fret 7, finger 3 (ring)
+  8(f4) = fret 8, finger 4 (pinky)
 ```
 
 **Finger Numbers:**
@@ -122,14 +144,13 @@ Format: {fret}f{finger}
 - `3` = ring finger
 - `4` = pinky
 
-### Alternative Finger Notation
+### Alternative Notations
 
-Both formats are supported:
+All these formats are supported for finger specification:
 
 ```
-5f1   = fret 5, finger 1
-5(1)  = fret 5, finger 1
-5     = fret 5, no finger info
+5(f1)    = fret 5, finger 1 (recommended)
+5        = fret 5, no finger info
 ```
 
 ---
@@ -382,6 +403,8 @@ e|--5-5-5--|
 
 ## 📊 Complete Example
 
+### Example 1: Advanced Techniques
+
 ```
 TITLE: Metal Lick - Harmonic Minor
 BPM: 140
@@ -415,6 +438,41 @@ r   = release            <5> = natural harmonic
 s   = legato slide       t   = tap
 x   = muted              d   = down stroke
 ^   = lift/bend          u   = up stroke
+```
+
+### Example 2: Manual Beat Control
+
+```
+TITLE: Manual Beat Demo - Same String Multiple Beats
+BPM: 100
+KEY: C
+CATEGORY: exercise
+DIFFICULTY: beginner
+TUNING: EADGBE
+
+e|--5(b1f1)--7(b2f3)--8(b3f4)--10(b4f4)--|
+B|----------------------------------------|
+G|----------------------------------------|
+D|----------------------------------------|
+A|----------------------------------------|
+E|----------------------------------------|
+
+NOTES:
+This demonstrates manual beat control.
+Same string (high e) playing 4 different notes in sequence.
+
+Without manual beats, this would be impossible to specify 
+because the parser would see them all on the same string.
+
+Beat notation:
+- 5(b1f1) = fret 5, beat 1, finger 1
+- 7(b2f3) = fret 7, beat 2, finger 3
+- 8(b3f4) = fret 8, beat 3, finger 4
+- 10(b4f4) = fret 10, beat 4, finger 4
+
+LEGEND:
+(b1f1) = beat 1, finger 1
+(b2f3) = beat 2, finger 3
 ```
 
 ---
