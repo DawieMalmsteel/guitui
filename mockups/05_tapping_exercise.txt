@@ -1,0 +1,51 @@
+================================================================================
+                  MOCKUP 5: TAPPING EXERCISE - JOE SATRIANI STYLE
+================================================================================
+
+Lesson: Two-Hand Tapping Lick
+BPM: 120 | Beat 5/10
+
+     0   1   2   3   4   5   6   7   8   9   10  11  12
+ e ║---|---|---|---|5h7|---|---|---|---|---|12t|7p5|5  |
+ B ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ G ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ D ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ A ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ E ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+    Pick:            L                   R   L   L      
+    Tech:            h→7                 TAP p→5        
+
+Legend: L=left hand pick/hammer, R=right hand tap, h=hammer, p=pull, t=tap
+
+================================================================================
+
+SPECIAL FEATURES:
+- Right hand tap notation: 12t
+- Left/Right hand indicators
+- Legato sequence: h→7, tap, p→5
+
+TECHNIQUE BREAKDOWN:
+Beat 1: 5h7  - Hammer from 5 to 7 (left hand)
+Beat 2: 12t  - Tap fret 12 (right hand)
+Beat 3: 7p5  - Pull-off from 7 to 5 (left hand)
+Beat 4: 5    - Final note
+
+PROS:
+✅ Clear tapping notation
+✅ Hand indicators (L/R) rất hữu ích
+✅ Shows legato flow
+
+CONS:
+❌ Cần thêm 1 dòng cho hand indicators
+
+USE CASE:
+- Tapping exercises
+- Two-hand technique
+- Van Halen, Satriani, Vai style licks
+- Legato runs
+
+ADVANCED NOTATION:
+Could add:
+- Timing: 16th notes, triplets
+- Dynamics: loud/soft taps
+- Position markers: fret-hand position

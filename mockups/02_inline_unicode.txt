@@ -1,0 +1,49 @@
+================================================================================
+                  MOCKUP 2: OPTION 4 - INLINE UNICODE SYMBOLS
+================================================================================
+
+Lesson: Vibrato & Bending Exercise
+BPM: 90 | Beat 1/4
+
+     0   1   2   3   4   5   6   7   8   9   10  11  12
+ e ║---|---|---|---|---|7↗9|---|9↘7|---|7~ |---|---|---|
+ B ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ G ║---|---|---|---|5→7|---|7→9|---|---|---|---|---|---|
+ D ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ A ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ E ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+    Pick:            ∏       ∏       V       ∏          
+
+Symbols: ↗=bend up, ↘=bend down, →=slide up, ~=vibrato
+
+================================================================================
+
+CELL WIDTH: 4 chars (increased from 3)
+Format: |7↗9| instead of |7b9|
+
+PROS:
+✅ Rất trực quan - technique ngay trên note
+✅ Đẹp với Unicode arrows
+✅ Compact - chỉ 1 dòng picking
+✅ Dễ follow technique flow
+
+CONS:
+❌ Cần tăng cell width → fretboard rộng hơn
+❌ Unicode có thể không render đẹp trên mọi terminal
+❌ Khó đọc nếu có quá nhiều symbols
+
+SYMBOLS USED:
+↗ = bend up
+↘ = bend down  
+→ = slide up
+← = slide down
+ʰ = hammer (superscript)
+ᵖ = pull-off (superscript)
+~ = vibrato
+ᵀ = tap
+* = pinch harmonic
+
+USE CASE:
+- Tốt cho lead guitar: techniques rõ ràng ngay trên note
+- Tốt cho visual learners: nhìn thấy movement
+- Cần terminal hỗ trợ Unicode tốt

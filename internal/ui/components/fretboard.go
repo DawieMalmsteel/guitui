@@ -268,6 +268,15 @@ func buildActiveLayer(grid map[string]cellData, props FretboardProps) {
 			}
 			style = getFingerStyle(m.Finger, true)
 			style = style.Copy().Bold(true).Underline(true)
+		} else if props.ShowAll {
+			// Tab mode: show fret number + technique inline
+			displayText = formatFretWithTechnique(m)
+			// Inverted colors: background = note color, text = dark
+			note := theory.CalculateNote(props.Tuning[m.StringIndex], m.Fret)
+			style = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(theory.CatBase).        // Dark text
+				Background(theory.NoteColors[note]) // Note color background
 		} else {
 			// Default mode: show note name with finger color
 			displayText = fmt.Sprintf(" %-2s", theory.NoteNames[m.Note])
@@ -283,12 +292,52 @@ func buildActiveLayer(grid map[string]cellData, props FretboardProps) {
 	}
 }
 
+// formatFretWithTechnique formats fret number with technique notation inline
+func formatFretWithTechnique(m lesson.Marker) string {
+	var result string
+	fretStr := fmt.Sprintf("%d", m.Fret)
+	
+	// Add technique suffix if exists
+	switch m.Technique {
+	case "bend":
+		result = fmt.Sprintf("%sb%d", fretStr, m.TechParams.TargetFret)
+	case "slide":
+		if m.TechParams.SlideType == "up" {
+			result = fmt.Sprintf("%s/%d", fretStr, m.TechParams.TargetFret)
+		} else if m.TechParams.SlideType == "down" {
+			result = fmt.Sprintf("%s\\%d", fretStr, m.TechParams.TargetFret)
+		} else {
+			result = fretStr
+		}
+	case "hammer":
+		result = fmt.Sprintf("%sh%d", fretStr, m.TechParams.TargetFret)
+	case "pulloff":
+		result = fmt.Sprintf("%sp%d", fretStr, m.TechParams.TargetFret)
+	case "vibrato":
+		result = fretStr + "~"
+	case "tap":
+		result = fretStr + "t"
+	case "harmonic":
+		result = fmt.Sprintf("<%s>", fretStr)
+	case "pinch":
+		result = fretStr + "*"
+	case "trill":
+		result = fmt.Sprintf("%sl%d", fretStr, m.TechParams.TargetFret)
+	default:
+		// No technique, just fret number
+		result = fretStr
+	}
+	
+	// Pad to 3 chars (standard cell width)
+	return fmt.Sprintf("%-3s", result)
+}
+
 // renderGrid converts the grid to string output
 func renderGrid(grid map[string]cellData, props FretboardProps) string {
 	var b strings.Builder
 
 	// Header: fret numbers
-	b.WriteString("     ")
+	b.WriteString("      ") // 6 spaces to align with string label
 	for f := 0; f <= props.FretCount; f++ {
 		b.WriteString(lipgloss.NewStyle().Foreground(theory.CatLavender).Render(fmt.Sprintf("%-4d", f)))
 	}
@@ -296,8 +345,8 @@ func renderGrid(grid map[string]cellData, props FretboardProps) string {
 
 	// Render each string (top to bottom: e, B, G, D, A, E)
 	for s := 5; s >= 0; s-- {
-		// String label
-		b.WriteString(nutStyle.Render(fmt.Sprintf(" %s ║", stringLabels[s])))
+		// String label (6 chars to match header)
+		b.WriteString(nutStyle.Render(fmt.Sprintf("  %s ║", stringLabels[s])))
 
 		// Render each fret
 		for f := 0; f <= props.FretCount; f++ {
@@ -319,6 +368,19 @@ func renderGrid(grid map[string]cellData, props FretboardProps) string {
 			// Fret line separator
 			b.WriteString(fretLineStyle.Render("|"))
 		}
+		b.WriteString("\n")
+	}
+	
+	// Add technique and picking lines below fretboard
+	techLine := renderTechniqueLine(props)
+	pickLine := renderPickingLine(props)
+	
+	if techLine != "" {
+		b.WriteString(techLine)
+		b.WriteString("\n")
+	}
+	if pickLine != "" {
+		b.WriteString(pickLine)
 		b.WriteString("\n")
 	}
 
@@ -345,4 +407,136 @@ func renderEmptyCell(stringIdx, fret int) string {
 
 	// Default: string
 	return "---"
+}
+
+// renderTechniqueLine renders the technique notation line below fretboard
+func renderTechniqueLine(props FretboardProps) string {
+	if len(props.ActiveItems) == 0 {
+		return ""
+	}
+	
+	// Build technique indicators for each fret position
+	techMap := make(map[int]string) // fret -> technique symbol
+	
+	for _, item := range props.ActiveItems {
+		m := item.Marker
+		if m.Technique == "" {
+			continue
+		}
+		
+		var symbol string
+		switch m.Technique {
+		case "bend":
+			symbol = fmt.Sprintf("b→%d", m.TechParams.TargetFret)
+		case "slide":
+			if m.TechParams.SlideType == "up" {
+				symbol = fmt.Sprintf("/→%d", m.TechParams.TargetFret)
+			} else {
+				symbol = fmt.Sprintf("\\→%d", m.TechParams.TargetFret)
+			}
+		case "hammer":
+			symbol = fmt.Sprintf("h→%d", m.TechParams.TargetFret)
+		case "pulloff":
+			symbol = fmt.Sprintf("p→%d", m.TechParams.TargetFret)
+		case "vibrato":
+			symbol = "~"
+		case "tap":
+			symbol = "tap"
+		case "harmonic":
+			symbol = "<>"
+		case "pinch":
+			symbol = "*"
+		case "trill":
+			symbol = fmt.Sprintf("l→%d", m.TechParams.TargetFret)
+		}
+		
+		if symbol != "" {
+			techMap[m.Fret] = symbol
+		}
+	}
+	
+	if len(techMap) == 0 {
+		return ""
+	}
+	
+	// Build the line - match fretboard alignment
+	var b strings.Builder
+	// Match the string label spacing (6 chars: "  e ║" becomes " Tech:")
+	b.WriteString(lipgloss.NewStyle().Foreground(theory.CatGreen).Bold(true).Render(" Tech:"))
+	
+	for f := 0; f <= props.FretCount; f++ {
+		if symbol, exists := techMap[f]; exists {
+			// Pad to match fret cell width (3 chars) + separator (1 char) = 4 total
+			padded := fmt.Sprintf("%-3s|", symbol)
+			b.WriteString(lipgloss.NewStyle().Foreground(theory.CatYellow).Render(padded))
+		} else {
+			b.WriteString("    ") // 3 spaces + 1 separator
+		}
+	}
+	
+	return b.String()
+}
+
+// renderPickingLine renders the picking notation line below technique line
+func renderPickingLine(props FretboardProps) string {
+	if len(props.ActiveItems) == 0 {
+		return ""
+	}
+	
+	// Build picking indicators for each fret position
+	pickMap := make(map[int]string) // fret -> picking symbol
+	
+	for _, item := range props.ActiveItems {
+		m := item.Marker
+		if m.Picking == "" {
+			continue
+		}
+		
+		var symbol string
+		switch m.Picking {
+		case "down":
+			symbol = "∏"
+		case "up":
+			symbol = "V"
+		case "alternate":
+			symbol = "d-u"
+		case "tremolo":
+			symbol = "≈"
+		case "sweep":
+			symbol = "→"
+		case "economy":
+			symbol = "e"
+		}
+		
+		if symbol != "" {
+			pickMap[m.Fret] = symbol
+		}
+	}
+	
+	if len(pickMap) == 0 {
+		return ""
+	}
+	
+	// Build the line - match fretboard alignment
+	var b strings.Builder
+	b.WriteString(lipgloss.NewStyle().Foreground(theory.CatGreen).Bold(true).Render(" Pick:"))
+	
+	for f := 0; f <= props.FretCount; f++ {
+		if symbol, exists := pickMap[f]; exists {
+			// Pad to match fret cell width (3 chars) + separator (1 char) = 4 total
+			padded := fmt.Sprintf("%-3s|", symbol)
+			// Color code: red for down, blue for up
+			style := lipgloss.NewStyle().Foreground(theory.CatYellow)
+			if symbol == "∏" {
+				style = lipgloss.NewStyle().Foreground(theory.CatRed).Bold(true)
+			} else if symbol == "V" {
+				style = lipgloss.NewStyle().Foreground(theory.CatBlue).Bold(true)
+			}
+			b.WriteString(style.Render(padded))
+		} else {
+			b.WriteString("    ") // 3 spaces + 1 separator
+		}
+	}
+	
+	return b.String()
 }

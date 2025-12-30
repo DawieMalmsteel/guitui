@@ -1,0 +1,55 @@
+================================================================================
+                    MOCKUP 6: SWEEP PICKING ARPEGGIO
+================================================================================
+
+Lesson: Sweep Picking - Am7 Arpeggio
+BPM: 80 | Beat 1/2
+
+     0   1   2   3   4   5   6   7   8   9   10  11  12
+ e ║---|---|---|---|---|---|---|---|12 |---|---|---|---|
+ B ║---|---|---|---|---|---|---|---|13 |---|---|---|---|
+ G ║---|---|---|---|---|---|---|---|12 |---|---|---|---|
+ D ║---|---|---|---|---|---|---|---|14 |---|---|---|---|
+ A ║---|---|---|---|---|---|---|---|12 |---|---|---|---|
+ E ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+    Pick:                            ↓  ↓  ↓  ↓  ↓       
+    Tech:                         SWEEP→→→→→             
+
+Legend: ↓=down sweep, →=sweep direction
+
+Alternative ASCII version:
+    Pick:                            d  d  d  d  d       
+    Tech:                         SWEEP------->           
+
+================================================================================
+
+SPECIAL FEATURES:
+- All notes in same beat (chord shape)
+- Sweep direction indicator
+- Down stroke on all notes
+
+TECHNIQUE BREAKDOWN:
+- One fluid down stroke across all strings
+- Mute previous string when picking next
+- Roll pick across strings
+- Fret hand: one shape, sequential picking
+
+PROS:
+✅ Very clear sweep indicator
+✅ Shows all notes are in same "beat" (arpeggio)
+✅ Direction arrows helpful
+
+CONS:
+❌ Might need more visual cues for sweep motion
+❌ Return sweep (up) needs different notation
+
+USE CASE:
+- Sweep picking exercises
+- Arpeggio practice
+- Neoclassical style (Yngwie, Batio)
+- Jazz fusion runs
+
+VARIATIONS:
+Down sweep: d d d d or ↓↓↓↓ or →→→→
+Up sweep:   u u u u or ↑↑↑↑ or ←←←←
+Bi-directional: ↓↓↓↓↑↑↑↑

@@ -1,0 +1,57 @@
+================================================================================
+              MOCKUP 7: ALTERNATE PICKING - CHROMATIC EXERCISE
+================================================================================
+
+Lesson: Chromatic Scale - Strict Alternate Picking
+BPM: 120 | Beat 4/16
+
+     0   1   2   3   4   5   6   7   8   9   10  11  12
+ e ║---|---|---|---|5  |6  |7  |8  |9  |10 |11 |12 |---|
+ B ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ G ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ D ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ A ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ E ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+    Pick:            d  u  d  u  d  u  d  u              
+    Pattern: d-u-d-u (strict alternate)
+
+Alternative with visual flow:
+    Pick:            ∏  V  ∏  V  ∏  V  ∏  V              
+                     └──┴──┴──┴──┴──┴──┴──┘
+                     ALTERNATE PICKING PATTERN
+
+================================================================================
+
+SPECIAL FEATURES:
+- Strict alternate pattern clearly shown
+- Every note has picking indicator
+- Pattern description below
+
+TECHNIQUE BREAKDOWN:
+- Start with downstroke (d or ∏)
+- Alternate every note: d-u-d-u-d-u-d-u
+- Keep strict timing
+- Metronome lock essential
+
+PROS:
+✅ Crystal clear picking pattern
+✅ Great for technique practice
+✅ Easy to follow
+✅ Shows pattern consistency
+
+CONS:
+❌ Repetitive for long sequences
+❌ Takes up space
+
+USE CASE:
+- Technical exercises
+- Speed building
+- Picking accuracy training
+- Synchronization practice
+- Scale practice with strict picking
+
+VARIATIONS:
+- Economy picking: same direction on string changes
+- Down-sweep on descending
+- Up-sweep on ascending
+- Accent patterns: > d u d u

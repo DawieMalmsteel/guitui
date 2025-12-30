@@ -1,0 +1,60 @@
+================================================================================
+           MOCKUP 8: HYBRID - COMPLEX MULTI-TECHNIQUE COMBINATION
+================================================================================
+
+Lesson: Combined Techniques - Blues/Rock Lick
+BPM: 110 | Beat 2/8
+
+     0   1   2   3   4   5   6   7   8   9   10  11  12
+ e ║---|---|---|---|5  |7b9|9r7|5~ |---|---|---|---|---|
+ B ║---|---|---|---|---|---|5h7|7p5|5  |---|---|---|---|
+ G ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ D ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ A ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ E ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+    Tech:                b→9 rel  ~   h→7 p→5           
+    Pick:            d   d   d   d   d   d   d          
+
+Detailed breakdown for current beat (e string, 7b9):
+    Technique: BEND
+    Target: Fret 9 (whole step)
+    Start: Fret 7, Finger 3 (ring)
+    Direction: Push up (toward ceiling)
+    Picking: Down stroke
+
+================================================================================
+
+SPECIAL FEATURES:
+- Multiple techniques in sequence
+- Bend + release + vibrato combo
+- Hammer + pull-off on different string
+- Tech line shows technique flow
+- Pick line shows consistent downstrokes
+
+TECHNIQUE SEQUENCE:
+Beat 1: 5    - Normal note
+Beat 2: 7b9  - Bend from 7 to 9 (whole step)
+Beat 3: 9r7  - Release bend from 9 back to 7
+Beat 4: 5~   - Note with vibrato
+Beat 5: 5h7  - Hammer-on from 5 to 7 (B string)
+Beat 6: 7p5  - Pull-off from 7 to 5 (B string)
+Beat 7: 5    - Final note
+
+PROS:
+✅ Shows realistic guitar phrase
+✅ Multiple techniques clearly labeled
+✅ Good balance of info and clarity
+✅ Practical example
+
+CONS:
+❌ Can be overwhelming for beginners
+❌ Requires understanding of all symbols
+
+USE CASE:
+- Real-world licks
+- Blues/rock playing
+- Intermediate to advanced
+- Practice song solos
+- Technique combination training
+
+THIS IS PROBABLY THE MOST REALISTIC USE CASE!

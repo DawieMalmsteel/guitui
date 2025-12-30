@@ -1,0 +1,45 @@
+================================================================================
+                    MOCKUP 4: METAL RIFF - PALM MUTING
+================================================================================
+
+Lesson: Metal Riff - Palm Muting & Fast Picking
+BPM: 160 | Beat 2/6
+
+     0   1   2   3   4   5   6   7   8   9   10  11  12
+ e ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ B ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ G ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ D ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ A ║---|---|---|0  |0  |0  |3  |5/7|7\5|3  |---|---|---|
+ E ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+    Pick:        ∏   ∏   ∏   ∏   ∏   ∏   ∏              
+    Tech:        [----------PM----------]                
+
+Legend: PM=Palm Mute, ∏=down stroke, /=slide up, \=slide down
+
+================================================================================
+
+SPECIAL FEATURES:
+- Palm Mute indicator: [----PM----]
+- Fast picking pattern clearly visible
+- Slide notation inline: 5/7, 7\5
+
+PROS:
+✅ Rõ ràng cho rhythm/palm mute sections
+✅ Picking pattern rất clear
+✅ Bracket notation cho sustained techniques
+✅ Tốt cho metal/rock
+
+CONS:
+❌ Palm mute bracket có thể overlap với symbols
+
+USE CASE:
+- Metal rhythm playing
+- Palm mute exercises
+- Fast picking patterns
+- Gallop rhythms (Maiden, Metallica style)
+
+VARIATIONS:
+- PM can be shown as: PM----, [PM], or just PM below notes
+- Staccato: dots (.) below notes
+- Accent: > above/below notes

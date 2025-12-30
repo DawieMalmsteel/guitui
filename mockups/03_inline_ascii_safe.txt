@@ -1,0 +1,59 @@
+================================================================================
+              MOCKUP 3: OPTION 4 - INLINE ASCII-SAFE (NO UNICODE)
+================================================================================
+
+Lesson: Vibrato & Bending Exercise (ASCII version)
+BPM: 90 | Beat 1/4
+
+     0   1   2   3   4   5   6   7   8   9   10  11  12
+ e ║---|---|---|---|---|7b9|---|9r7|---|7~ |---|---|---|
+ B ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ G ║---|---|---|---|5/7|---|7/9|---|---|---|---|---|---|
+ D ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ A ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ E ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+    Pick:            d       d       u       d          
+
+Symbols: b=bend, r=release, /=slide up, ~=vibrato, d=down, u=up
+
+================================================================================
+
+CELL WIDTH: 3-4 chars (flexible)
+Format: |7b9| or |5/7| - standard tab notation
+
+PROS:
+✅ Hoàn toàn ASCII - chắc chắn render mọi nơi
+✅ Giống standard guitar tab notation
+✅ Dễ đọc cho người quen với tabs
+✅ Không cần Unicode font support
+✅ Copy/paste từ online tabs hoạt động
+
+CONS:
+❌ Ít trực quan hơn Unicode
+❌ Vẫn cần tăng cell width cho một số techniques
+
+SYMBOLS USED (Standard Tab Notation):
+b  = bend (7b9 = bend 7 to pitch of 9)
+r  = release (9r7 = release from 9 to 7)
+/  = slide up (5/7 = slide from 5 to 7)
+\  = slide down (7\5 = slide from 7 to 5)
+h  = hammer-on (5h7)
+p  = pull-off (7p5)
+~  = vibrato (5~, 7~~)
+l  = trill (5l7)
+t  = tap (12t)
+*  = pinch harmonic (7*)
+<> = natural harmonic (<12>)
+
+PICKING:
+d  = down stroke
+u  = up stroke
+or
+∏  = down (if terminal supports)
+V  = up
+
+USE CASE:
+- BEST cho compatibility
+- Tốt cho người mới: nhận diện symbols từ online tabs
+- Tốt cho copy/paste workflows
+- An toàn nhất cho mọi terminal/font

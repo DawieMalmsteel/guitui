@@ -1,0 +1,36 @@
+================================================================================
+                    MOCKUP 1: OPTION 2 - TWO LINES BELOW
+================================================================================
+
+Lesson: Blues Lick with Bends & Slides
+BPM: 100 | Beat 3/8
+
+     0   1   2   3   4   5   6   7   8   9   10  11  12
+ e ║---|---|---|---|---|---|---|7b9|---|---|---|---|---|
+ B ║---|---|---|---|---|5h7|---|---|---|---|---|---|---|
+ G ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ D ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ A ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ E ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+    Tech:                h→7     b→9                        
+    Pick:    ∏       V       ∏       V       ∏       V      
+
+Legend: b=bend, h=hammer, /=slide up, \=slide down, ∏=down, V=up
+
+================================================================================
+
+PROS:
+✅ Tách bạch rõ ràng giữa left hand (Tech) và right hand (Pick)
+✅ Dễ đọc, organized
+✅ Không cần thay đổi fret cell width
+✅ Có thể show full picking pattern
+
+CONS:
+❌ Chiếm 2 dòng thêm
+❌ Technique alignment có thể không chính xác nếu nhiều notes trên cùng beat
+❌ Cần space nhiều hơn
+
+USE CASE:
+- Tốt cho học: nhìn rõ từng loại technique
+- Tốt cho rhythm guitar: picking pattern rõ ràng
+- Tốt cho beginners: không bị overwhelm với symbols

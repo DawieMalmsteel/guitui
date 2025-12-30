@@ -1,0 +1,52 @@
+================================================================================
+                    MOCKUP 9: MINIMAL - CURRENT BEAT FOCUS
+================================================================================
+
+Lesson: Focus Mode - Highlight Current Beat Only
+BPM: 100 | Beat 5/12
+
+     0   1   2   3   4   5   6   7   8   9   10  11  12
+ e ║---|---|---|---|---|---|---|---|---|7b9|---|---|---|
+ B ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ G ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ D ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ A ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+ E ║---|---|---|---|---|---|---|---|---|---|---|---|---|
+                                        ↑
+                    CURRENT BEAT: Bend to fret 9 (whole step)
+                    Picking: Down stroke (∏)
+                    Finger: Ring finger (3)
+
+No clutter - only show info for current active note!
+
+================================================================================
+
+SPECIAL FEATURES:
+- Minimalist display
+- Focus on current beat only
+- Detailed info shown below for active note
+- No persistent picking/tech lines
+
+PROS:
+✅ Least cluttered
+✅ Focus on what matters NOW
+✅ Great for learning one beat at a time
+✅ Reduces cognitive load
+✅ Perfect for slow practice
+
+CONS:
+❌ No context of upcoming techniques
+❌ Hard to see pattern/phrase structure
+❌ Need to check detail panel for info
+
+USE CASE:
+- Slow practice mode
+- Learning new technique
+- One-beat-at-a-time approach
+- Beginner friendly
+- Focus/concentration mode
+
+COULD COMBINE WITH:
+- Upcoming indicators (●, :, ∴) like current implementation
+- Detail panel for technique info (what we just built!)
+- Toggle mode: minimal <-> full info

@@ -437,24 +437,11 @@ func (m Model) View() string {
 		Foreground(theory.CatSky).Bold(true).
 		Render(fmt.Sprintf("PLAYING: %s (Step %d/%d)", m.currentLesson.Title, m.currentStep+1, len(m.currentLesson.Steps)))
 
-	// Technique Info Panel
-	var techniqueInfo string
-	if len(m.currentLesson.Steps) > 0 && m.currentStep < len(m.currentLesson.Steps) {
-		techniqueInfo = components.RenderTechniqueInfo(components.TechniqueDisplayProps{
-			CurrentStep:  m.currentLesson.Steps[m.currentStep],
-			CurrentIndex: m.currentStep,
-			TotalSteps:   len(m.currentLesson.Steps),
-		})
-	}
-
-	// Build bottom section (fretboard + technique info + metronome bar)
+	// Build bottom section (fretboard + metronome bar)
 	bottomSection := lipgloss.JoinVertical(lipgloss.Left,
 		lipgloss.NewStyle().Padding(0, 1).Render(infoBar),
 		lipgloss.NewStyle().Render(fretboardView),
-		lipgloss.JoinHorizontal(lipgloss.Top,
-			lipgloss.NewStyle().PaddingLeft(2).Render(metroDisplay),
-			lipgloss.NewStyle().PaddingLeft(4).Render(techniqueInfo),
-		),
+		lipgloss.NewStyle().PaddingLeft(2).Render(metroDisplay),
 	)
 
 	mainView := lipgloss.JoinVertical(lipgloss.Left, topContainer, bottomSection)
