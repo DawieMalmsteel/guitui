@@ -279,11 +279,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if selectedItem, ok := m.list.SelectedItem().(item); ok {
 				m.currentLesson = selectedItem.lesson
 				m.currentStep = 0
-
-				if !m.metronomeActive {
-					m.metronomeActive = true
-					cmds = append(cmds, tick(m.metroBPM))
-				}
+				// Don't auto-start - user will press Space to play
 			}
 
 		case "u", "U": // Toggle upcoming markers
@@ -441,11 +437,24 @@ func (m Model) View() string {
 		Foreground(theory.CatSky).Bold(true).
 		Render(fmt.Sprintf("PLAYING: %s (Step %d/%d)", m.currentLesson.Title, m.currentStep+1, len(m.currentLesson.Steps)))
 
-	// Build bottom section (fretboard + metronome bar)
+	// Technique Info Panel
+	var techniqueInfo string
+	if len(m.currentLesson.Steps) > 0 && m.currentStep < len(m.currentLesson.Steps) {
+		techniqueInfo = components.RenderTechniqueInfo(components.TechniqueDisplayProps{
+			CurrentStep:  m.currentLesson.Steps[m.currentStep],
+			CurrentIndex: m.currentStep,
+			TotalSteps:   len(m.currentLesson.Steps),
+		})
+	}
+
+	// Build bottom section (fretboard + technique info + metronome bar)
 	bottomSection := lipgloss.JoinVertical(lipgloss.Left,
 		lipgloss.NewStyle().Padding(0, 1).Render(infoBar),
 		lipgloss.NewStyle().Render(fretboardView),
-		lipgloss.NewStyle().PaddingLeft(2).Render(metroDisplay),
+		lipgloss.JoinHorizontal(lipgloss.Top,
+			lipgloss.NewStyle().PaddingLeft(2).Render(metroDisplay),
+			lipgloss.NewStyle().PaddingLeft(4).Render(techniqueInfo),
+		),
 	)
 
 	mainView := lipgloss.JoinVertical(lipgloss.Left, topContainer, bottomSection)

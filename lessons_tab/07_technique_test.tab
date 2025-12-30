@@ -1,0 +1,35 @@
+TITLE: Technique Test - Bends & Slides
+BPM: 80
+KEY: A
+CATEGORY: technique
+DIFFICULTY: intermediate
+TUNING: EADGBE
+
+e|5(f1)|7b9(f3)|-----|5/7(f1)|7\5(f3)|-----|
+B|-----|-------|5h7(f1)|-----|-------|7p5(f3)|
+G|-----|-------|-----|-----|-------|-----|
+D|-----|-------|-----|-----|-------|-----|
+A|-----|-------|-----|-----|-------|-----|
+E|-----|-------|-----|-----|-------|-----|
+
+NOTES:
+This file demonstrates basic guitar techniques:
+
+Beat 1: e string - fret 5, finger 1 (normal note)
+Beat 2: e string - fret 7, bend to 9 (whole step bend)
+Beat 3: B string - fret 5, hammer to 7
+Beat 4: e string - slide from 5 to 7
+Beat 5: e string - slide from 7 down to 5
+Beat 6: B string - pull-off from 7 to 5
+
+Techniques covered:
+- Bends (b): 7b9 means bend fret 7 to pitch of fret 9
+- Slides (/\): 5/7 slide up, 7\5 slide down
+- Hammer-on (h): 5h7 pick 5, hammer to 7
+- Pull-off (p): 7p5 pick 7, pull to 5
+
+LEGEND:
+b  = bend           h  = hammer-on
+/  = slide up       p  = pull-off
+\  = slide down     ~  = vibrato
+t  = tap            *  = pinch harmonic

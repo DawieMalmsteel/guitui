@@ -230,7 +230,7 @@ func (p *TabParser) parseSteps() []Step {
 }
 
 // parseCell parses a single beat cell for one string
-// Cell format examples: "5(f1)", "7", "x", "12(f3)", ""
+// Cell format examples: "5(f1)", "7b9", "5/7", "5h7", "12t", "<12>", "x"
 func (p *TabParser) parseCell(stringIdx int, cell string) *Marker {
 	cell = strings.TrimSpace(cell)
 	
@@ -245,13 +245,33 @@ func (p *TabParser) parseCell(stringIdx int, cell string) *Marker {
 			Fret:        -1, // Special value for muted
 			Finger:      0,
 			Note:        theory.C, // Placeholder
+			Technique:   TechNone,
+		}
+	}
+
+	// Check for harmonic notation: <12>
+	if strings.HasPrefix(cell, "<") && strings.Contains(cell, ">") {
+		fretStr := strings.TrimPrefix(cell, "<")
+		fretStr = strings.TrimSuffix(fretStr, ">")
+		fret, _ := strconv.Atoi(fretStr)
+		
+		openNote := theory.StandardTuning[stringIdx]
+		note := theory.CalculateNote(openNote, fret)
+		
+		return &Marker{
+			StringIndex: stringIdx,
+			Fret:        fret,
+			Finger:      0,
+			Note:        note,
+			Technique:   TechHarmonic,
 		}
 	}
 
 	// Check if starts with a digit (fret number)
 	if len(cell) > 0 && cell[0] >= '0' && cell[0] <= '9' {
-		// Extract fret and optional finger
+		// Extract fret, finger, and technique
 		fret, finger := p.extractFretFinger(cell)
+		technique, params := p.extractTechnique(cell)
 
 		// Calculate note
 		openNote := theory.StandardTuning[stringIdx]
@@ -262,6 +282,8 @@ func (p *TabParser) parseCell(stringIdx int, cell string) *Marker {
 			Fret:        fret,
 			Finger:      finger,
 			Note:        note,
+			Technique:   technique,
+			TechParams:  params,
 		}
 	}
 
@@ -306,6 +328,123 @@ func (p *TabParser) extractFretFinger(cell string) (fret, finger int) {
 	}
 
 	return fret, finger
+}
+
+// extractTechnique parses technique notation from cell string
+// Supports: 7b9 (bend), 5/7 (slide up), 7\5 (slide down), 5h7 (hammer), 7p5 (pull), 5~ (vibrato), 12t (tap), 5l7 (trill)
+func (p *TabParser) extractTechnique(cell string) (TechniqueType, TechniqueParams) {
+	params := TechniqueParams{}
+	
+	// Remove finger notation first to analyze technique
+	cellClean := cell
+	if idx := strings.Index(cell, "("); idx != -1 {
+		cellClean = cell[:idx]
+	}
+	
+	// Check for bend: 7b9
+	if strings.Contains(cellClean, "b") {
+		parts := strings.Split(cellClean, "b")
+		if len(parts) == 2 {
+			target, err := strconv.Atoi(parts[1])
+			if err == nil {
+				params.TargetFret = target
+				return TechBend, params
+			}
+		}
+	}
+	
+	// Check for slide up: 5/7
+	if strings.Contains(cellClean, "/") {
+		parts := strings.Split(cellClean, "/")
+		if len(parts) == 2 {
+			target, err := strconv.Atoi(parts[1])
+			if err == nil {
+				params.TargetFret = target
+				params.SlideType = "up"
+				return TechSlide, params
+			}
+		} else if len(parts) == 2 && parts[1] == "" {
+			// Slide out up: 5/
+			params.SlideType = "out_up"
+			return TechSlide, params
+		}
+	}
+	
+	// Check for slide down: 7\5
+	if strings.Contains(cellClean, "\\") {
+		parts := strings.Split(cellClean, "\\")
+		if len(parts) == 2 {
+			target, err := strconv.Atoi(parts[1])
+			if err == nil {
+				params.TargetFret = target
+				params.SlideType = "down"
+				return TechSlide, params
+			}
+		} else if len(parts) == 2 && parts[1] == "" {
+			// Slide out down: 7\
+			params.SlideType = "out_down"
+			return TechSlide, params
+		}
+	}
+	
+	// Check for hammer-on: 5h7
+	if strings.Contains(cellClean, "h") {
+		parts := strings.Split(cellClean, "h")
+		if len(parts) == 2 {
+			target, err := strconv.Atoi(parts[1])
+			if err == nil {
+				params.TargetFret = target
+				return TechHammer, params
+			}
+		}
+	}
+	
+	// Check for pull-off: 7p5
+	if strings.Contains(cellClean, "p") {
+		parts := strings.Split(cellClean, "p")
+		if len(parts) == 2 {
+			target, err := strconv.Atoi(parts[1])
+			if err == nil {
+				params.TargetFret = target
+				return TechPullOff, params
+			}
+		}
+	}
+	
+	// Check for trill: 5l7
+	if strings.Contains(cellClean, "l") {
+		parts := strings.Split(cellClean, "l")
+		if len(parts) == 2 {
+			target, err := strconv.Atoi(parts[1])
+			if err == nil {
+				params.TargetFret = target
+				return TechTrill, params
+			}
+		}
+	}
+	
+	// Check for vibrato: 5~, 5~~, 5~~~
+	if strings.Contains(cellClean, "~") {
+		tildeCount := strings.Count(cellClean, "~")
+		if tildeCount >= 2 {
+			params.VibratoWidth = "wide"
+		} else {
+			params.VibratoWidth = "normal"
+		}
+		return TechVibrato, params
+	}
+	
+	// Check for tap: 12t
+	if strings.HasSuffix(cellClean, "t") {
+		return TechTap, params
+	}
+	
+	// Check for pinch harmonic: 7*
+	if strings.HasSuffix(cellClean, "*") {
+		return TechPinch, params
+	}
+	
+	return TechNone, params
 }
 
 // LoadTabDirectory loads all .tab files from a directory
