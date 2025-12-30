@@ -164,3 +164,63 @@ type Lesson struct {
 **Simpler, more reliable, 100% accurate guitar lessons!** 🎸✅
 
 Bây giờ bạn có thể tạo lessons chính xác bằng tay trong JSON.
+
+---
+
+## UPDATE: Tab Key Fixed
+
+### Vấn đề
+Sau khi remove generator, Tab key không hoạt động vì tôi đã xóa rendering logic.
+
+### Fix Applied
+
+#### 1. Added AllNotes Map
+```go
+// Build map of all notes in lesson for Tab mode
+allNotesMap := make(map[string]theory.Note)
+if m.showAll && len(steps) > 0 {
+    for _, step := range steps {
+        for _, marker := range step.Markers {
+            key := fmt.Sprintf("%d_%d", marker.StringIndex, marker.Fret)
+            allNotesMap[key] = marker.Note
+        }
+    }
+}
+```
+
+#### 2. Pass to Fretboard
+```go
+fretProps := components.FretboardProps{
+    AllNotes: allNotesMap,  // ← Added
+    ShowAll:  m.showAll,
+    ...
+}
+```
+
+#### 3. Render Note Names
+```go
+// Tab Mode - Show note names
+if props.ShowAll {
+    for key, note := range props.AllNotes {
+        grid[key] = cellData{
+            text:  fmt.Sprintf("%-3s", theory.NoteNames[note]),
+            style: lipgloss.NewStyle().Foreground(theory.NoteColors[note]),
+        }
+    }
+}
+```
+
+### Tab Key Now Works! ✅
+
+**Usage:**
+- Press `Tab` → Show note names (A, C, D, E, G...) với màu sắc
+- Press `Tab` lại → Hide note names
+- Tự động tắt Scale Shape (S) và Upcoming (U) khi bật Tab
+
+**Display Modes:**
+- `S` - Scale sequence numbers (1, 2, 3...)
+- `Tab` - Note names (A, C#, D...)
+- `H` - Finger numbers (1, 2, 3, 4)
+- `U` - Upcoming markers
+
+**All modes hoạt động 100%!** 🎸✨

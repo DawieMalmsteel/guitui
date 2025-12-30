@@ -71,7 +71,6 @@ type FretboardProps struct {
 	ActiveItems     []ActiveItem
 	UpcomingMarkers map[string]UpcomingItem
 	ScaleSequence   map[string]SequenceItem
-	AllNotes        map[string]theory.Note // For Tab mode (note names)
 	Tuning          []theory.Note
 	ShowAll         bool
 	FretCount       int
@@ -92,10 +91,44 @@ func RenderFretboard(props FretboardProps) string {
 	grid := make(map[string]cellData)
 
 	// ==========================================================
-	// LAYER 0: SCALE SEQUENCE (from Steps data)
+	// LAYER 0: BACKGROUND MODES
 	// ==========================================================
-	if props.ShowScaleShape {
-		// Render notes with sequence numbers and finger colors
+	
+	// Mode 1: Tab Mode (Tab key) - Show ALL note names on entire fretboard
+	if props.ShowAll {
+		for s := 0; s < 6; s++ {
+			for f := 0; f <= props.FretCount; f++ {
+				note := theory.CalculateNote(props.Tuning[s], f)
+				key := fmt.Sprintf("%d_%d", s, f)
+				
+				// Check if this note is in the scale (ScaleSequence)
+				if seqItem, inScale := props.ScaleSequence[key]; inScale && props.ShowScaleShape {
+					// S + Tab mode: Show note name with finger background color
+					var style lipgloss.Style
+					if st, ok := fingerBgStyles[seqItem.Finger]; ok {
+						style = st
+					} else {
+						style = fingerBgStyles[0]
+					}
+					// Black text on colored background for readability
+					style = style.Copy().Foreground(lipgloss.Color("#000000"))
+					grid[key] = cellData{
+						text:     fmt.Sprintf("%-3s", theory.NoteNames[note]),
+						style:    style,
+						priority: 1,
+					}
+				} else {
+					// Tab only: Show note name with note color
+					grid[key] = cellData{
+						text:     fmt.Sprintf("%-3s", theory.NoteNames[note]),
+						style:    lipgloss.NewStyle().Foreground(theory.NoteColors[note]),
+						priority: 1,
+					}
+				}
+			}
+		}
+	} else if props.ShowScaleShape {
+		// Mode 2: Scale Sequence (S key) - Show sequence numbers
 		for key, seqItem := range props.ScaleSequence {
 			text := formatOrder3Chars(seqItem.Order)
 			
@@ -107,12 +140,30 @@ func RenderFretboard(props FretboardProps) string {
 			}
 			grid[key] = cellData{text: text, style: style, priority: 1}
 		}
+	} else if props.ShowFingers {
+		// Mode 3: Finger Mode (H key) - Show finger numbers for lesson notes
+		for key, seqItem := range props.ScaleSequence {
+			fingerText := "   "
+			if seqItem.Finger > 0 {
+				fingerText = fmt.Sprintf(" %d ", seqItem.Finger)
+			} else {
+				fingerText = " 0 " // Open string
+			}
+			
+			var style lipgloss.Style
+			if st, ok := fingerBgStyles[seqItem.Finger]; ok {
+				style = st
+			} else {
+				style = fingerBgStyles[0]
+			}
+			grid[key] = cellData{text: fingerText, style: style, priority: 1}
+		}
 	}
 
 	// ==========================================================
 	// LAYER 1: UPCOMING
 	// ==========================================================
-	if !props.ShowScaleShape {
+	if !props.ShowScaleShape && !props.ShowAll {
 		for key, item := range props.UpcomingMarkers {
 			if item.Distance > 3 {
 				continue
@@ -143,14 +194,16 @@ func RenderFretboard(props FretboardProps) string {
 		var style lipgloss.Style
 
 		if props.ShowScaleShape {
+			// Scale Shape mode: show sequence number
 			displayText = formatOrder3Chars(item.Order)
 			if s, ok := fingerFgStyles[m.Finger]; ok {
 				style = s
 			} else {
 				style = fingerFgStyles[0]
 			}
-			style = style.Copy().Underline(true)
+			style = style.Copy().Underline(true).Bold(true)
 		} else if props.ShowFingers {
+			// Finger mode: show finger number with bold/underline
 			if m.Finger > 0 {
 				displayText = fmt.Sprintf(" %d ", m.Finger)
 				if s, ok := fingerBgStyles[m.Finger]; ok {
@@ -162,7 +215,9 @@ func RenderFretboard(props FretboardProps) string {
 				displayText = " 0 "
 				style = fingerBgStyles[0]
 			}
+			style = style.Copy().Bold(true).Underline(true)
 		} else {
+			// Default mode: show note name
 			displayText = fmt.Sprintf(" %-2s", theory.NoteNames[m.Note])
 			style = activeNoteStyle
 			if m.Fret == 0 {

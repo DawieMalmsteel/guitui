@@ -153,16 +153,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "tab":
 			m.showAll = !m.showAll
-			// Nếu bật Tab (Note names) thì tắt Shape và Upcoming đi cho đỡ loạn
+			// Tab mode có thể combine với S (Scale Shape)
+			// Nhưng tắt Upcoming và Fingers
 			if m.showAll {
-				m.showScaleShape = false
 				m.showUpcoming = false
+				m.showFingers = false
 			} else {
 				m.showUpcoming = true
 			}
 
 		case "h", "H":
 			m.showFingers = !m.showFingers
+			// Nếu bật Fingers thì tắt Tab mode và Scale Shape
+			if m.showFingers {
+				m.showAll = false
+				m.showScaleShape = false
+			}
 
 		case " ": // Space: Toggle Play/Pause
 			m.metronomeActive = !m.metronomeActive
@@ -250,17 +256,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.metroPlayer.SetSoundType(m.metroSoundType)
 				}
 			} else {
-				// Original S key behavior for scale shape
+				// S key behavior for scale shape - CAN combine with Tab
 				m.showScaleShape = !m.showScaleShape
 				if m.showScaleShape {
-					m.showAll = false
+					// Tắt Fingers và Upcoming, nhưng GIỮ Tab
+					m.showFingers = false
+					m.showUpcoming = false
 				}
 			}
 
 		case "S": // Keep uppercase S for scale shape always
 			m.showScaleShape = !m.showScaleShape
 			if m.showScaleShape {
-				m.showAll = false
+				// Tắt Fingers và Upcoming, nhưng GIỮ Tab
+				m.showFingers = false
+				m.showUpcoming = false
 			}
 
 		case "enter": // Chọn bài
@@ -362,22 +372,10 @@ func (m Model) View() string {
 		}
 	}
 
-	// D. All Notes Map (for Tab mode - show note names)
-	allNotesMap := make(map[string]theory.Note)
-	if m.showAll && len(steps) > 0 {
-		for _, step := range steps {
-			for _, marker := range step.Markers {
-				key := fmt.Sprintf("%d_%d", marker.StringIndex, marker.Fret)
-				allNotesMap[key] = marker.Note
-			}
-		}
-	}
-
 	fretProps := components.FretboardProps{
 		ActiveItems:     activeItems,
 		UpcomingMarkers: upcoming,
 		ScaleSequence:   scaleSequence,
-		AllNotes:        allNotesMap,
 		Tuning:          m.tuning,
 		ShowAll:         m.showAll,
 		FretCount:       m.fretCount,

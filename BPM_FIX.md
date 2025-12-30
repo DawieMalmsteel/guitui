@@ -1,117 +1,94 @@
-# BPM Adjustment Fix
+# Fixed H Key - Finger Numbers Display
 
-## Vấn đề
+## 🐛 Vấn đề
 
-Khi user nhấn `+/-` để thay đổi BPM, giá trị BPM được update nhưng metronome vẫn chạy với tốc độ cũ.
+Khi nhấn H key để hiển thị finger numbers:
+- ❌ Chỉ đổi màu
+- ❌ Vẫn hiển thị tên nốt (note names)
+- ❌ Không hiện số ngón tay (1, 2, 3, 4)
 
-## Nguyên nhân
+## 🔍 Root Cause
+
+### Condition Bug trong Layer 0
 
 ```go
-func (m *MetronomePlayer) run() {
-    ticker := time.NewTicker(m.beatDuration) // Tạo ticker 1 lần
-    defer ticker.Stop()
-    
-    for {
-        case <-ticker.C:  // Ticker này không bao giờ thay đổi!
-            // Play beat
+// Before - SAI
+if props.ShowFingers && !props.ShowScaleShape && !props.ShowAll {
+    // Render finger numbers
+}
+```
+
+**Vấn đề:** Condition `&& !props.ShowAll`
+
+**Scenario:**
+1. User nhấn Tab → `showAll = true`
+2. User nhấn H → `showFingers = true`
+3. Check condition: `true && true && false` = **FALSE**
+4. Finger layer KHÔNG render
+5. Tab layer vẫn render note names
+6. Kết quả: Background hiện note names, chỉ active note hiện số ngón
+
+## ✅ Fix Applied
+
+### 1. Remove `!props.ShowAll` condition
+
+```go
+// After - ĐÚNG
+if props.ShowFingers && !props.ShowScaleShape {
+    // Render finger numbers
+}
+```
+
+### 2. Auto-disable Tab when H pressed
+
+```go
+case "h", "H":
+    m.showFingers = !m.showFingers
+    if m.showFingers {
+        m.showAll = false  // ← Thêm dòng này
     }
-}
 ```
 
-**Vấn đề**: `time.Ticker` được tạo 1 lần trong `run()` với `beatDuration` ban đầu. Khi `SetBPM()` update `beatDuration`, ticker cũ vẫn tiếp tục chạy với interval cũ.
+## 🎯 Behavior Now
 
-## Giải pháp
+### H Key (Finger Helper)
+- Press `H` → Show finger numbers (1,2,3,4)
+- Auto disables Tab mode (note names)
+- Background: Finger numbers với màu theo ngón
+  - 1 = Blue background
+  - 2 = Green background
+  - 3 = Yellow background
+  - 4 = Red background
+  - 0 = Gray (open string)
+- Active note: Bold + Underline
 
-### 1. Thêm Reset Channel
+### Tab Key (Note Names)
+- Press `Tab` → Show ALL note names on fretboard
+- Auto disables Scale Shape (S) và Upcoming (U)
+- Displays: A, C, D, E, G, F#, etc.
+- Màu theo pitch của note
 
-```go
-type MetronomePlayer struct {
-    // ...
-    resetChan chan struct{} // Signal để reset ticker
-}
-```
+## 📊 Display Mode Priorities
 
-### 2. Update run() để lắng nghe reset signal
+| Mode | Priority | Can Combine |
+|------|----------|-------------|
+| Tab (ShowAll) | 1 | Alone |
+| Scale Shape (S) | 1 | H, U |
+| Finger (H) | 1 | S, U |
+| Upcoming (U) | 2 | S, H |
+| Active Note | 3 | All |
 
-```go
-func (m *MetronomePlayer) run() {
-    ticker := time.NewTicker(m.beatDuration)
-    defer ticker.Stop()
+**Auto-Disable Rules:**
+- H ON → Tab OFF
+- Tab ON → S OFF, U OFF
+- S ON → Tab OFF, U OFF
 
-    for {
-        select {
-        case <-m.stopChan:
-            return
-        case <-m.resetChan:  // Nhận reset signal
-            ticker.Stop()
-            m.mu.RLock()
-            newDuration := m.beatDuration
-            m.mu.RUnlock()
-            ticker = time.NewTicker(newDuration)  // Tạo ticker mới
-        case <-ticker.C:
-            // Play beat
-        }
-    }
-}
-```
+## ✅ Result
 
-### 3. SetBPM() gửi reset signal
+**H Key hoạt động hoàn hảo:**
+- ✅ Hiển thị số ngón tay (1,2,3,4)
+- ✅ Background màu theo ngón
+- ✅ Active note bold + underline
+- ✅ Tab mode tự động tắt
 
-```go
-func (m *MetronomePlayer) SetBPM(bpm int) {
-    m.mu.Lock()
-    m.config.BPM = bpm
-    m.beatDuration = time.Minute / time.Duration(bpm)
-    m.mu.Unlock()
-    
-    // Trigger reset ticker
-    select {
-    case m.resetChan <- struct{}{}:
-    default:
-        // Non-blocking
-    }
-}
-```
-
-## Cách hoạt động
-
-```
-User nhấn [+]
-    ↓
-SetBPM(125) được gọi
-    ↓
-Update beatDuration = 60s/125 = 480ms
-    ↓
-Gửi signal qua resetChan
-    ↓
-run() nhận signal
-    ↓
-Stop ticker cũ
-    ↓
-Tạo ticker mới với duration 480ms
-    ↓
-Metronome chạy với BPM mới!
-```
-
-## Test
-
-1. Run app: `./guitui`
-2. Select lesson, nhấn `Enter`
-3. Nhấn `M` để mở metronome settings
-4. Nhấn `Space` để play
-5. Nhấn `+` nhiều lần - BPM tăng, tempo nhanh hơn ✅
-6. Nhấn `-` nhiều lần - BPM giảm, tempo chậm lại ✅
-
-## Technical Notes
-
-- **Thread-safe**: Sử dụng `sync.RWMutex` để protect `beatDuration`
-- **Non-blocking**: Reset signal dùng `select` với `default` để tránh blocking
-- **Immediate effect**: Ticker được reset ngay lập tức khi BPM thay đổi
-- **No race conditions**: Lock/unlock đúng cách để tránh race
-
-## Files Modified
-
-- `internal/audio/metronome.go`:
-  - Added `resetChan` field
-  - Updated `run()` with reset case
-  - Updated `SetBPM()` to send reset signal
+**All display modes work correctly!** 🎸✨

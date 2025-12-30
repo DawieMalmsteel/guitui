@@ -1,129 +1,164 @@
-# Guitar Engine - Keyboard Controls
+# Keyboard Controls - Final Implementation
 
-## TUI App - Hoàn toàn điều khiển bằng phím tắt
+## Display Modes (Background Layer)
 
-Đây là Terminal UI (TUI) application, không sử dụng chuột. Tất cả chức năng được điều khiển bằng bàn phím.
+### 🔢 S - Scale Sequence Mode
+**Function**: Hiển thị số thứ tự (1, 2, 3...) của notes trong lesson
 
-## 🎵 Main Controls
+**Behavior:**
+- Shows sequence numbers for all notes in lesson
+- Each number colored by finger (finger 1 = blue, 2 = green, etc.)
+- Active note: underlined + bold
+- Auto disables: ShowAll (Tab), Upcoming
 
-| Phím | Chức năng |
-|------|-----------|
-| `Space` | Play / Pause metronome và progression |
-| `Enter` | Chọn bài lesson trong danh sách |
-| `↑` `↓` | Di chuyển trong danh sách lessons |
-| `Ctrl+C` / `Q` | Thoát app |
-
-## 🎛️ Metronome Settings
-
-| Phím | Chức năng |
-|------|-----------|
-| `M` | Mở/đóng **Metronome Settings Panel** |
-
-### Khi Settings Panel mở (nhấn M):
-
-| Phím | Chức năng |
-|------|-----------|
-| `+` hoặc `=` | Tăng BPM (+5) |
-| `-` hoặc `_` | Giảm BPM (-5) |
-| `1` | Set time signature 4/4 (Common) |
-| `2` | Set time signature 3/4 (Waltz) |
-| `3` | Set time signature 6/8 (Compound) |
-| `4` | Set time signature 2/4 (March) |
-| `S` | Cycle sound types: Wood → Mechanical → Digital |
-| `M` | Đóng settings panel |
-
-**Range BPM**: 40 - 240
-
-## 🎸 Display Modes
-
-| Phím | Chức năng |
-|------|-----------|
-| `H` | Toggle **Finger Helper** - Hiển thị số ngón tay |
-| `S` | Toggle **Scale Shape/Sequence** - Hiển thị thứ tự note |
-| `Tab` | Toggle **Note Names** - Hiển thị tên note |
-| `U` | Toggle **Upcoming markers** - Hiển thị note sắp tới |
-
-> **Note**: Phím `S` có 2 chức năng:
-> - Khi **Settings Panel đóng**: Toggle Scale Shape
-> - Khi **Settings Panel mở**: Cycle sound types
-
-## 🎼 Position & Layout
-
-| Phím | Chức năng |
-|------|-----------|
-| `N` | Switch Position (CAGED/3NPS positions) |
-| `P` | Toggle Position Type (CAGED ↔ 3NPS) |
-| `F` | Toggle Fret count (12 ↔ 24 frets) |
-
-## 🎨 Metronome Settings Panel
-
-Khi nhấn phím `M`, panel settings sẽ xuất hiện ở giữa màn hình với layout:
-
+**Example:**
 ```
-╔═══════════════════════════════════════════╗
-║      ♪ METRONOME SETTINGS ♪               ║
-║            ▶ PLAYING                      ║
-║                                           ║
-║ ──────────────────────────────────────    ║
-║                                           ║
-║ TEMPO (BPM)  ▸ 120 ◂                     ║
-║   Press [+] to increase, [-] to decrease  ║
-║                                           ║
-║ TIME SIGNATURE  4/4 (Common Time)         ║
-║   [1] 4/4   [2] 3/4   [3] 6/8   [4] 2/4  ║
-║                                           ║
-║ SOUND TYPE  🪵 Wood Block                ║
-║   Natural wood percussion                 ║
-║   Press [S] to cycle sounds               ║
-║                                           ║
-║ ──────────────────────────────────────    ║
-║                                           ║
-║ KEYBOARD CONTROLS                         ║
-║                                           ║
-║   [Space]  Play / Pause metronome         ║
-║   [M]      Close this menu                ║
-║   [+/-]    Adjust tempo                   ║
-║   [1-4]    Change time signature          ║
-║   [S]      Cycle sound types              ║
-╚═══════════════════════════════════════════╝
+E |---1---4---|  (Số 1, 4 với màu theo ngón)
+B |---2---5---|
+G |---3---6---|
 ```
 
-## 🔊 Sound Types
+### 🎵 Tab - Note Names Mode
+**Function**: Hiển thị tên nốt nhạc trên **TOÀN BỘ** fretboard
 
-| Type | Mô tả | Đặc điểm |
-|------|-------|----------|
-| 🪵 **Wood Block** | Natural wood percussion | Âm thanh tự nhiên, harmonics phong phú |
-| ⚙️ **Mechanical** | Sharp mechanical click | Click sắc, ngắn, crisper |
-| 🔔 **Digital Beep** | Clean electronic tone | Beep điện tử, nhẹ nhàng |
+**Behavior:**
+- Shows ALL note names on entire fretboard (not just lesson notes)
+- Each note colored by its pitch (A = purple, C = red, E = yellow...)
+- Displays notes from fret 0 to fret 12 (or FretCount)
+- Auto disables: ShowScaleShape (S), ShowUpcoming (U)
 
-## 💡 Tips
-
-1. **Metronome first**: Nhấn `M` để mở settings, adjust BPM và sound type trước khi practice
-2. **Practice flow**: 
-   - Chọn lesson (`Enter`)
-   - Mở metronome settings (`M`)
-   - Điều chỉnh BPM phù hợp
-   - Đóng settings (`M`)
-   - Play (`Space`)
-3. **Display modes**: Dùng `H`, `S`, `Tab`, `U` để toggle các mode hiển thị theo nhu cầu
-4. **Position switching**: Dùng `N` để practice các position khác nhau của cùng 1 scale
-
-## 🎹 Quick Start Example
-
+**Example:**
 ```
-1. Run app: ./guitui
-2. Select lesson: ↑↓ + Enter
-3. Open metronome: M
-4. Set BPM 80: Press - nhiều lần
-5. Choose Wood sound: S (cycle đến Wood)
-6. Close settings: M
-7. Start practice: Space
-8. Toggle helpers: H (fingers), S (sequence)
+E |--E--F--F#-G--G#-A--A#-B--C--C#-D--D#-E--|
+B |--B--C--C#-D--D#-E--F--F#-G--G#-A--A#-B--|
+G |--G--G#-A--A#-B--C--C#-D--D#-E--F--F#-G--|
+D |--D--D#-E--F--F#-G--G#-A--A#-B--C--C#-D--|
+A |--A--A#-B--C--C#-D--D#-E--F--F#-G--G#-A--|
+E |--E--F--F#-G--G#-A--A#-B--C--C#-D--D#-E--|
 ```
 
-## ⚠️ Important Notes
+### 👆 H - Finger Helper Mode
+**Function**: Hiển thị số ngón tay (1, 2, 3, 4) cho notes trong lesson
 
-- **NO MOUSE**: Đây là TUI app, không sử dụng chuột
-- **Settings Panel**: Phải mở panel (`M`) mới điều chỉnh được metronome
-- **Sound changes**: Chỉ có hiệu lực khi panel settings đang mở
-- **BPM limits**: Minimum 40, Maximum 240
+**Behavior:**
+- Shows finger numbers for lesson notes only
+- Colored background by finger
+  - Finger 1 (index) = Blue background
+  - Finger 2 (middle) = Green background
+  - Finger 3 (ring) = Yellow background
+  - Finger 4 (pinky) = Red background
+  - Finger 0 (open) = Gray background
+- Active note: bold + underline
+- Works independently from S and Tab
+
+**Example:**
+```
+E |---1---4---|  (Ngón 1, 4 với background màu)
+B |---1---3---|
+G |---1---3---|
+```
+
+### 👁️ U - Upcoming Markers Mode
+**Function**: Hiển thị preview của 3 notes sắp tới
+
+**Behavior:**
+- Shows next 3 upcoming notes with distance indicator
+- Distance 1: Bold arrow (▶)
+- Distance 2: Regular arrow (→)
+- Distance 3: Faint arrow (⇒)
+- Disabled when: ShowScaleShape (S) or ShowAll (Tab) is ON
+- Can combine with: ShowFingers (H)
+
+## Metronome Controls
+
+### ⏯️ Space - Play/Pause
+Toggle metronome play/pause
+
+### 🎛️ M - Metronome Settings
+Open/close metronome settings panel
+
+**In settings panel:**
+- `+/-` - Adjust BPM (40-240, step 5)
+- `1-4` - Change time signature (4/4, 3/4, 6/8, 2/4)
+- `S` - Cycle sound types (Wood → Mechanical → Digital)
+- `M` - Close settings
+
+## Other Controls
+
+### 🎸 F - Toggle Fret Count
+Cycle through fret counts: 12 → 15 → 22 → 12
+
+### 📋 Enter - Select Lesson
+Select highlighted lesson from list and start playing
+
+### ❌ Q / Ctrl+C - Quit
+Exit application
+
+## Key Combinations & Priorities
+
+### Display Mode Exclusivity
+
+**Mutually Exclusive:**
+- `S` (Scale Shape) ⟷ `Tab` (Note Names)
+- When one is ON, the other is automatically OFF
+
+**Can Combine:**
+- `H` (Fingers) + `U` (Upcoming) ✅
+- `H` (Fingers) + Default mode ✅
+
+**Auto-Disable Rules:**
+- Press `S` → Disables `Tab`, `U`
+- Press `Tab` → Disables `S`, `U`
+- Press `Tab` again → Re-enables `U`
+
+### Rendering Priority (Low to High)
+
+1. **Background Layer** (Priority 1)
+   - Scale Sequence (S)
+   - Note Names (Tab)
+   - Finger Numbers (H)
+
+2. **Upcoming Layer** (Priority 2)
+   - Upcoming markers (U)
+
+3. **Active Layer** (Priority 3)
+   - Currently playing note
+   - Always visible, highest priority
+
+## Summary Table
+
+| Key | Mode | Shows | Scope | Combines With |
+|-----|------|-------|-------|---------------|
+| `S` | Scale Sequence | 1,2,3... | Lesson notes | H |
+| `Tab` | Note Names | A,C,D... | Entire fretboard | - |
+| `H` | Fingers | 1,2,3,4 | Lesson notes | S, U |
+| `U` | Upcoming | Arrows | Next 3 notes | H |
+| `Space` | Play/Pause | - | Metronome | All |
+| `M` | Metro Settings | Panel | Metronome | All |
+| `F` | Fret Count | 12/15/22 | Fretboard | All |
+
+## Usage Examples
+
+### Learning a Scale
+1. Press `S` → See sequence numbers
+2. Press `H` → See which fingers to use
+3. Press `Space` → Start playing
+
+### Understanding Note Positions
+1. Press `Tab` → See all notes on fretboard
+2. Find patterns and relationships
+3. Press `Tab` again to turn off
+
+### Practicing with Finger Guide
+1. Press `H` → See finger numbers
+2. Press `U` → See upcoming notes
+3. Press `Space` → Practice
+
+### Adjusting Metronome
+1. Press `M` → Open settings
+2. Press `+/-` to adjust BPM
+3. Press `1-4` to change time signature
+4. Press `S` to change sound
+5. Press `M` to close
+
+**All controls work perfectly!** 🎸✨
