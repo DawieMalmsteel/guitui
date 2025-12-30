@@ -63,10 +63,10 @@ type Model struct {
 }
 
 func NewModel() Model {
-	// 1. Load Data
-	loadedLessons, err := lesson.LoadLessons("lessons.json")
+	// 1. Load Data from both JSON and TAB files
+	loadedLessons, err := lesson.LoadLessonsFromMultipleSources("lessons.json", "lessons_tab")
 	if err != nil {
-		fmt.Println("Lỗi load lessons.json:", err)
+		fmt.Println("Lỗi load lessons:", err)
 		loadedLessons = []lesson.Lesson{}
 	}
 
