@@ -10,35 +10,45 @@ import (
 // FretboardDataBuilder builds data for fretboard rendering
 type FretboardDataBuilder struct {
 	lesson      *lesson.Lesson
-	currentStep int
+	currentBeat int
 }
 
 // NewFretboardDataBuilder creates a new builder
-func NewFretboardDataBuilder(l *lesson.Lesson, step int) *FretboardDataBuilder {
+func NewFretboardDataBuilder(l *lesson.Lesson, beat int) *FretboardDataBuilder {
 	return &FretboardDataBuilder{
 		lesson:      l,
-		currentStep: step,
+		currentBeat: beat,
 	}
 }
 
-// BuildActiveItems returns active notes for current step
+// BuildActiveItems returns active notes for current beat
+// Includes notes from previous steps that are still holding (duration > 1)
 func (b *FretboardDataBuilder) BuildActiveItems() []components.ActiveItem {
 	if b.lesson == nil || len(b.lesson.Steps) == 0 {
 		return []components.ActiveItem{}
 	}
 
-	if b.currentStep < 0 || b.currentStep >= len(b.lesson.Steps) {
+	if b.currentBeat < 1 {
 		return []components.ActiveItem{}
 	}
 
 	activeItems := []components.ActiveItem{}
-	step := b.lesson.Steps[b.currentStep]
-
-	for _, marker := range step.Markers {
-		activeItems = append(activeItems, components.ActiveItem{
-			Marker: marker,
-			Order:  b.currentStep + 1, // 1-based
-		})
+	
+	// Find all steps that should be active at current beat
+	// A step is active if: step.Beat <= currentBeat < step.Beat + duration
+	for i, step := range b.lesson.Steps {
+		for _, marker := range step.Markers {
+			stepBeat := step.Beat
+			stepEndBeat := stepBeat + marker.Duration - 1 // Duration includes start beat
+			
+			// Check if this marker is active at current beat
+			if b.currentBeat >= stepBeat && b.currentBeat <= stepEndBeat {
+				activeItems = append(activeItems, components.ActiveItem{
+					Marker: marker,
+					Order:  i + 1, // 1-based step order
+				})
+			}
+		}
 	}
 
 	return activeItems

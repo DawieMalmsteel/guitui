@@ -1,0 +1,83 @@
+TITLE: New Bend Format Test
+BPM: 80
+KEY: A
+CATEGORY: technique
+DIFFICULTY: intermediate
+TUNING: EADGBE
+
+SECTION 1: BASIC BENDS (8 beats)
+e|7b{½}(f3)|7b{1}(f3)|7b{1½}(f3)|7b{2}(f3)|-----|-----|-----|-----|
+B|---------|---------|-----------|---------|-----|-----|-----|-----|
+G|---------|---------|-----------|---------|-----|-----|-----|-----|
+D|---------|---------|-----------|---------|-----|-----|-----|-----|
+A|---------|---------|-----------|---------|-----|-----|-----|-----|
+E|---------|---------|-----------|---------|-----|-----|-----|-----|
+
+SECTION 2: BEND & RELEASE (8 beats)
+e|7b{1}r(f3)|7b{½}r(f3)|7b{1½}r(f3)|-----|-----|-----|-----|-----|
+B|----------|-----------|-----------|-----|-----|-----|-----|-----|
+G|----------|-----------|-----------|-----|-----|-----|-----|-----|
+D|----------|-----------|-----------|-----|-----|-----|-----|-----|
+A|----------|-----------|-----------|-----|-----|-----|-----|-----|
+E|----------|-----------|-----------|-----|-----|-----|-----|-----|
+
+SECTION 3: PRE-BEND (8 beats)
+e|pb{1}7(f3)|pb{½}7(f3)|pb{1½}7(f3)|pb{1}7r(f3)|-----|-----|-----|-----|
+B|----------|-----------|-----------|-----------|-----|-----|-----|-----|
+G|----------|-----------|-----------|-----------|-----|-----|-----|-----|
+D|----------|-----------|-----------|-----------|-----|-----|-----|-----|
+A|----------|-----------|-----------|-----------|-----|-----|-----|-----|
+E|----------|-----------|-----------|-----------|-----|-----|-----|-----|
+
+SECTION 4: MIXED WITH PICKING (8 beats)
+e|7b{1}(f3:d)|7b{½}(f3:u)|7b{1}r(f3:d)|pb{1}7(f3:u)|-----|-----|-----|-----|
+B|-----------|-----------|------------|-----------|-----|-----|-----|-----|
+G|-----------|-----------|------------|-----------|-----|-----|-----|-----|
+D|-----------|-----------|------------|-----------|-----|-----|-----|-----|
+A|-----------|-----------|------------|-----------|-----|-----|-----|-----|
+E|-----------|-----------|------------|-----------|-----|-----|-----|-----|
+
+NOTES:
+This file demonstrates the NEW bend format with step amounts.
+
+SECTION 1 - BASIC BENDS (8 beats):
+  Beat 1: 7b{½} = Half-step bend at fret 7
+  Beat 2: 7b{1} = Whole-step bend at fret 7
+  Beat 3: 7b{1½} = 1.5-step bend at fret 7
+  Beat 4: 7b{2} = 2-step bend at fret 7
+
+SECTION 2 - BEND & RELEASE (8 beats):
+  Beat 1: 7b{1}r = Whole-step bend with release
+  Beat 2: 7b{½}r = Half-step bend with release
+  Beat 3: 7b{1½}r = 1.5-step bend with release
+
+SECTION 3 - PRE-BEND (8 beats):
+  Beat 1: pb{1}7 = Pre-bend 1 step at fret 7
+  Beat 2: pb{½}7 = Pre-bend ½ step at fret 7
+  Beat 3: pb{1½}7 = Pre-bend 1½ step at fret 7
+  Beat 4: pb{1}7r = Pre-bend 1 step with release
+
+SECTION 4 - MIXED WITH PICKING (8 beats):
+  Bends combined with picking notation
+
+DISPLAY SYMBOLS:
+  ↗½   = Bend half-step
+  ↗1   = Bend whole-step
+  ↗1½  = Bend 1.5 steps
+  ↗1↘  = Bend with release
+  ᵇ1   = Pre-bend 1 step
+  ᵇ1↘  = Pre-bend with release
+
+LEGEND:
+New Bend Format:
+  7b{1}    = Bend 1 step at fret 7
+  7b{½}    = Bend ½ step at fret 7
+  7b{1½}   = Bend 1½ step at fret 7
+  7b{1}r   = Bend 1 step, release back
+  pb{1}7   = Pre-bend 1 step at fret 7
+  pb{1}7r  = Pre-bend 1 step, release
+
+Finger & Picking:
+  (f3)     = Finger 3
+  (f3:d)   = Finger 3 + down pick
+  (d)      = Down pick only

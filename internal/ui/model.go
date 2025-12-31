@@ -39,7 +39,7 @@ type Model struct {
 	// Logic Data
 	lessons       []lesson.Lesson
 	currentLesson lesson.Lesson
-	currentStep   int
+	currentBeat   int // Current beat number (1-based)
 
 	// UI State
 	list            list.Model
@@ -130,6 +130,40 @@ func NewModel() Model {
 		showScaleShape: false,
 		showUpcoming:   true,
 	}
+}
+
+// getTotalBeats returns total number of beats in current lesson
+func (m Model) getTotalBeats() int {
+	if len(m.currentLesson.Steps) == 0 {
+		return 0
+	}
+	// Last step's beat number is the total beats
+	lastStep := m.currentLesson.Steps[len(m.currentLesson.Steps)-1]
+	return lastStep.Beat
+}
+
+// getCurrentStepIndex finds the step index for current beat
+// Returns -1 if no step at current beat (hold/rest beat)
+func (m Model) getCurrentStepIndex() int {
+	for i, step := range m.currentLesson.Steps {
+		if step.Beat == m.currentBeat {
+			return i
+		}
+	}
+	return -1 // No step at this beat (it's a hold or rest)
+}
+
+// getActiveStepIndex finds the most recent step at or before current beat
+func (m Model) getActiveStepIndex() int {
+	activeIdx := -1
+	for i, step := range m.currentLesson.Steps {
+		if step.Beat <= m.currentBeat {
+			activeIdx = i
+		} else {
+			break
+		}
+	}
+	return activeIdx
 }
 
 func (m Model) Init() tea.Cmd {
@@ -278,7 +312,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter": // Chọn bài
 			if selectedItem, ok := m.list.SelectedItem().(item); ok {
 				m.currentLesson = selectedItem.lesson
-				m.currentStep = 0
+				m.currentBeat = 1 // Start at beat 1
+				// Set BPM from lesson
+				if m.currentLesson.BPM > 0 {
+					m.metroBPM = m.currentLesson.BPM
+					if m.metroPlayer != nil {
+						m.metroPlayer.SetBPM(m.metroBPM)
+					}
+				}
 				// Don't auto-start - user will press Space to play
 			}
 
@@ -305,7 +346,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case TickMsg:
 		if m.metronomeActive && len(m.currentLesson.Steps) > 0 {
-			m.currentStep = (m.currentStep + 1) % len(m.currentLesson.Steps)
+			totalBeats := m.getTotalBeats()
+			if totalBeats > 0 {
+				m.currentBeat = (m.currentBeat % totalBeats) + 1 // Loop through beats
+			}
 			cmds = append(cmds, tick(m.metroBPM))
 		}
 	}

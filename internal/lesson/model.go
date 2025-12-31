@@ -10,6 +10,7 @@ type TechniqueType string
 const (
 	TechNone     TechniqueType = ""
 	TechBend     TechniqueType = "bend"
+	TechPreBend  TechniqueType = "prebend"
 	TechSlide    TechniqueType = "slide"
 	TechHammer   TechniqueType = "hammer"
 	TechPullOff  TechniqueType = "pulloff"
@@ -35,7 +36,9 @@ const (
 
 // TechniqueParams contains parameters for guitar techniques
 type TechniqueParams struct {
-	TargetFret   int    // For bends, slides, hammer-ons, pull-offs
+	TargetFret   int    // For slides, hammer-ons, pull-offs
+	BendSteps    string // Bend amount: "1", "½", "1½", "2" etc.
+	BendRelease  bool   // True if bend has release (r suffix)
 	VibratoWidth string // "normal", "wide" for vibrato
 	SlideType    string // "up", "down", "in", "out" for slides
 }
@@ -47,6 +50,7 @@ type Marker struct {
 	Finger      int         `json:"finger"` // 0: Open, 1-4: Ngón tay
 	Note        theory.Note `json:"-"`      // Calculated at runtime
 	Beat        int         `json:"-"`      // Optional manual beat number (used during parsing)
+	Duration    int         `json:"duration,omitempty"` // Number of beats to hold (default 1)
 	
 	// Technique information
 	Technique TechniqueType   `json:"technique,omitempty"`

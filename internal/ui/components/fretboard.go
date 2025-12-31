@@ -417,8 +417,9 @@ func renderTechniqueLine(props FretboardProps) string {
 	
 	// Build technique indicators for each fret position with finger info
 	type TechInfo struct {
-		Symbol string
-		Finger int
+		Symbol     string
+		Finger     int
+		SourceFret int // For ghost text preview
 	}
 	techMap := make(map[int][]TechInfo) // fret -> array of techniques (for multi-note chords)
 	
@@ -429,37 +430,65 @@ func renderTechniqueLine(props FretboardProps) string {
 		}
 		
 		var symbol string
+		var sourceFret int = m.Fret // Store source fret for ghost preview
+		
 		switch m.Technique {
 		case "bend":
-			symbol = fmt.Sprintf("↗%d", m.TechParams.TargetFret)
+			// Bend: show step amount
+			// Format: ↗1 or ↗½ or ↗1½ or ↗1↘ (with release)
+			if m.TechParams.BendRelease {
+				symbol = fmt.Sprintf("↗%s↘", m.TechParams.BendSteps)
+			} else {
+				symbol = fmt.Sprintf("↗%s", m.TechParams.BendSteps)
+			}
+			sourceFret = -1 // No ghost text for bend
+		case "prebend":
+			// Pre-bend: show step amount
+			// Format: ᵇ1 or ᵇ½ or ᵇ1↘ (with release)
+			if m.TechParams.BendRelease {
+				symbol = fmt.Sprintf("ᵇ%s↘", m.TechParams.BendSteps)
+			} else {
+				symbol = fmt.Sprintf("ᵇ%s", m.TechParams.BendSteps)
+			}
+			sourceFret = -1 // No ghost text for pre-bend
 		case "slide":
 			if m.TechParams.SlideType == "up" {
+				// Show: 5→7 (slide from 5 to 7)
 				symbol = fmt.Sprintf("→%d", m.TechParams.TargetFret)
 			} else if m.TechParams.SlideType == "down" {
+				// Show: 7←5 (slide from 7 to 5)
 				symbol = fmt.Sprintf("←%d", m.TechParams.TargetFret)
 			} else {
 				symbol = "→"
 			}
 		case "hammer":
+			// Show: 5ʰ7 (hammer from 5 to 7)
 			symbol = fmt.Sprintf("ʰ%d", m.TechParams.TargetFret)
 		case "pulloff":
+			// Show: 7ᵖ5 (pull from 7 to 5)
 			symbol = fmt.Sprintf("ᵖ%d", m.TechParams.TargetFret)
 		case "vibrato":
 			symbol = "~"
+			sourceFret = -1 // No ghost text for vibrato
 		case "tap":
 			symbol = "ᵀ"
+			sourceFret = -1 // No ghost text for tap
 		case "harmonic":
 			symbol = "◊"
+			sourceFret = -1 // No ghost text for harmonic
 		case "pinch":
 			symbol = "*"
+			sourceFret = -1 // No ghost text for pinch
 		case "trill":
+			// Show: 5≈7 (trill between 5 and 7)
 			symbol = fmt.Sprintf("≈%d", m.TechParams.TargetFret)
 		}
 		
 		if symbol != "" {
 			techMap[m.Fret] = append(techMap[m.Fret], TechInfo{
-				Symbol: symbol,
-				Finger: m.Finger,
+				Symbol:     symbol,
+				Finger:     m.Finger,
+				SourceFret: sourceFret,
 			})
 		}
 	}
@@ -477,14 +506,39 @@ func renderTechniqueLine(props FretboardProps) string {
 			// Multiple techniques on same fret: join with |
 			var parts []string
 			for _, tech := range techs {
-				// Color by finger
-				style := lipgloss.NewStyle()
-				if fingerStyle, ok := fingerFgStyles[tech.Finger]; ok {
-					style = fingerStyle.Copy().Background(lipgloss.NoColor{})
+				// Build display: ghost source fret + symbol
+				// Example: "5" (faint) + "ʰ7" (colored by finger)
+				
+				var displayText string
+				
+				// Ghost text (source fret) - only for techniques that move between frets
+				if tech.SourceFret >= 0 {
+					ghostStyle := lipgloss.NewStyle().Foreground(theory.CatOverlay1).Faint(true)
+					ghostText := ghostStyle.Render(fmt.Sprintf("%d", tech.SourceFret))
+					
+					// Technique symbol - colored by finger
+					var symbolStyle lipgloss.Style
+					if fingerStyle, ok := fingerFgStyles[tech.Finger]; ok {
+						symbolStyle = fingerStyle.Copy().Background(lipgloss.NoColor{})
+					} else {
+						symbolStyle = lipgloss.NewStyle().Foreground(theory.CatYellow)
+					}
+					symbolText := symbolStyle.Render(tech.Symbol)
+					
+					// Combine: ghost + symbol
+					displayText = ghostText + symbolText
 				} else {
-					style = lipgloss.NewStyle().Foreground(theory.CatYellow)
+					// No ghost text - just symbol (for bend, vibrato, tap, etc.)
+					var symbolStyle lipgloss.Style
+					if fingerStyle, ok := fingerFgStyles[tech.Finger]; ok {
+						symbolStyle = fingerStyle.Copy().Background(lipgloss.NoColor{})
+					} else {
+						symbolStyle = lipgloss.NewStyle().Foreground(theory.CatYellow)
+					}
+					displayText = symbolStyle.Render(tech.Symbol)
 				}
-				parts = append(parts, style.Render(tech.Symbol))
+				
+				parts = append(parts, displayText)
 			}
 			
 			// Join multiple techniques with |

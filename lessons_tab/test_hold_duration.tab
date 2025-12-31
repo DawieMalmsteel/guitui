@@ -1,0 +1,82 @@
+TITLE: Hold Duration Test
+BPM: 80
+KEY: A
+CATEGORY: technique
+DIFFICULTY: beginner
+TUNING: EADGBE
+
+SECTION 1: BASIC HOLD (8 beats)
+e|7(f3)|===|===|===|3(f1)|===|---|---|
+B|------|===|===|------|------|===|---|---|
+G|------|===|===|------|------|===|---|---|
+D|------|---|---|------|------|---|---|---|
+A|------|---|---|------|------|---|---|---|
+E|------|---|---|------|------|---|---|---|
+
+SECTION 2: HOLD WITH TECHNIQUES (8 beats)
+e|7b{1}(f3)|===|===|5h7(f1)|==|3(f1)|---|---|
+B|----------|---|---|--------|==|-----|---|---|
+G|----------|---|---|--------|==|-----|---|---|
+D|----------|---|---|--------|---|-----|---|---|
+A|----------|---|---|--------|---|-----|---|---|
+E|----------|---|---|--------|---|-----|---|---|
+
+SECTION 3: MIXED HOLD LENGTHS (8 beats)
+e|7(f3)|===|5(f1)|===|===|===|3(f1)|---|
+B|------|===|------|===|===|===|------|---|
+G|------|---|------|===|===|===|------|---|
+D|------|---|------|---|---|---|------|---|
+A|------|---|------|---|---|---|------|---|
+E|------|---|------|---|---|---|------|---|
+
+NOTES:
+This file demonstrates the HOLD feature using `=` symbol.
+
+SECTION 1 - BASIC HOLD (8 beats):
+  Beat 1: Fret 7 on e string (+ B,G strings chord) - START
+  Beat 2: HOLD (all 3 strings continue)
+  Beat 3: HOLD (all 3 strings continue)
+  → Total duration: 3 beats
+  
+  Beat 4: Fret 5 on e string - START
+  Beat 5: Fret 3 on e+B+G - START
+  Beat 6: HOLD (B+G continue)
+  → Fret 3 duration: 2 beats
+
+SECTION 2 - HOLD WITH TECHNIQUES (8 beats):
+  Beat 1: Bend 1 step at fret 7 - START
+  Beat 2-3: HOLD bend (keep bending)
+  → Bend duration: 3 beats
+  
+  Beat 4: Hammer 5→7 + chord - START
+  Beat 5: HOLD (chord continues)
+  → Chord duration: 2 beats
+  
+  Beat 6: Fret 3
+  Beat 7-8: Rest
+
+SECTION 3 - MIXED HOLD LENGTHS (8 beats):
+  Beat 1: Fret 7 (e+B) - 2 beats duration
+  Beat 3: Fret 5 (e) - 4 beats duration!
+         (B continues from beat 1)
+  Beat 7: Fret 3
+
+DISPLAY BEHAVIOR:
+- Active note highlights for FULL duration
+- Tech line shows only at beat START
+- Hold beats don't create new steps
+
+LEGEND:
+Hold Symbol:
+  =     = Hold previous note (1 beat extension)
+  ==    = Same as = (formatting)
+  ===   = Same as = (formatting)
+  ====  = Same as = (formatting)
+
+All `=` variations mean: "Extend previous note by 1 beat"
+Use any number of `=` to match your TAB width formatting.
+
+Examples:
+  |7|=|=|     → Fret 7 plays for 3 beats
+  |7|==|===|  → Same: Fret 7 plays for 3 beats
+  |7b{1}|=|=| → Bend plays for 3 beats

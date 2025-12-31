@@ -42,9 +42,20 @@ func LoadTabFile(path string) (*Lesson, error) {
 
 	scanner := bufio.NewScanner(file)
 	inTabSection := false
+	foundFirstSection := false
 
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		// Skip SECTION headers
+		if strings.HasPrefix(line, "SECTION") {
+			if foundFirstSection {
+				// Stop at second SECTION - only parse first section
+				break
+			}
+			foundFirstSection = true
+			continue
+		}
 
 		// Parse metadata
 		if strings.Contains(line, ":") && !inTabSection {
@@ -92,12 +103,8 @@ func (p *TabParser) parseTabLine(line string) {
 	content = strings.TrimSuffix(content, "|")
 
 	if idx, ok := stringNames[stringName]; ok {
-		// Append to existing line (multi-bar support)
-		if existing, exists := p.tabLines[idx]; exists {
-			p.tabLines[idx] = existing + content
-		} else {
-			p.tabLines[idx] = content
-		}
+		// Only single section now - just set directly
+		p.tabLines[idx] = content
 	}
 }
 
@@ -171,11 +178,15 @@ func (p *TabParser) parseSteps() []Step {
 	// Process each beat (column of cells)
 	steps := []Step{}
 	beatNumber := 1
+	
+	// Track last played note on each string for hold extension
+	lastNoteOnString := make(map[int]*Marker) // stringIdx -> last marker
 
 	for beatIdx := 0; beatIdx < maxBeats; beatIdx++ {
 		// Check if this is a skip beat (all cells empty)
 		allEmpty := true
 		beatMarkers := []Marker{}
+		hasHold := false
 
 		for stringIdx := 0; stringIdx < 6; stringIdx++ {
 			cells, exists := beatCells[stringIdx]
@@ -196,18 +207,32 @@ func (p *TabParser) parseSteps() []Step {
 			cell = strings.ReplaceAll(cell, "-", "")
 			cell = strings.TrimSpace(cell)
 
+			// Check for hold symbol
+			if strings.Contains(cell, "=") {
+				// This is a hold - extend previous note on this string
+				if lastNote, exists := lastNoteOnString[stringIdx]; exists {
+					lastNote.Duration++
+					hasHold = true
+				}
+				// Don't create new marker for hold
+				continue
+			}
+
 			if cell != "" {
 				allEmpty = false
 				// Parse notes in this cell
 				marker := p.parseCell(stringIdx, cell)
 				if marker != nil {
+					// Set initial duration to 1
+					marker.Duration = 1
 					beatMarkers = append(beatMarkers, *marker)
+					// DON'T track pointer yet - will update after step creation
 				}
 			}
 		}
 
-		// If all cells are empty, it's a skip beat
-		if allEmpty {
+		// If all cells are empty or only holds, it's a skip beat
+		if allEmpty && !hasHold {
 			// Create empty step (rest)
 			step := Step{
 				Beat:    beatNumber,
@@ -222,6 +247,16 @@ func (p *TabParser) parseSteps() []Step {
 				Markers: beatMarkers,
 			}
 			steps = append(steps, step)
+			
+			// NOW update the tracking pointers to point to markers in the step
+			// (so duration updates will affect the actual step markers)
+			for i := range step.Markers {
+				lastNoteOnString[step.Markers[i].StringIndex] = &step.Markers[i]
+			}
+			
+			beatNumber++
+		} else if hasHold {
+			// Only holds in this beat - don't create new step, just increment beat
 			beatNumber++
 		}
 	}
@@ -346,7 +381,7 @@ func (p *TabParser) extractFretFinger(cell string) (fret, finger int) {
 }
 
 // extractTechnique parses technique notation from cell string
-// Supports: 7b9 (bend), 5/7 (slide up), 7\5 (slide down), 5h7 (hammer), 7p5 (pull), 5~ (vibrato), 12t (tap), 5l7 (trill)
+// Supports: 7b{1} (bend), pb{1}7 (pre-bend), 5/7 (slide up), 7\5 (slide down), 5h7 (hammer), 7p5 (pull), 5~ (vibrato), 12t (tap), 5l7 (trill)
 func (p *TabParser) extractTechnique(cell string) (TechniqueType, TechniqueParams) {
 	params := TechniqueParams{}
 	
@@ -356,15 +391,39 @@ func (p *TabParser) extractTechnique(cell string) (TechniqueType, TechniqueParam
 		cellClean = cell[:idx]
 	}
 	
-	// Check for bend: 7b9
-	if strings.Contains(cellClean, "b") {
-		parts := strings.Split(cellClean, "b")
-		if len(parts) == 2 {
-			target, err := strconv.Atoi(parts[1])
-			if err == nil {
-				params.TargetFret = target
-				return TechBend, params
+	// Check for pre-bend: pb{1}7 or pb{½}7r
+	if strings.HasPrefix(cellClean, "pb{") {
+		// Format: pb{1}7 or pb{½}7r
+		endBrace := strings.Index(cellClean, "}")
+		if endBrace != -1 {
+			bendSteps := cellClean[3:endBrace] // Extract "1", "½", "1½" etc.
+			params.BendSteps = bendSteps
+			
+			// Check for release
+			if strings.Contains(cellClean, "r") {
+				params.BendRelease = true
 			}
+			
+			return TechPreBend, params
+		}
+	}
+	
+	// Check for bend: 7b{1} or 7b{½}r
+	if strings.Contains(cellClean, "b{") {
+		// Format: 7b{1} or 7b{½}r or 7b{1½}
+		startBrace := strings.Index(cellClean, "{")
+		endBrace := strings.Index(cellClean, "}")
+		
+		if startBrace != -1 && endBrace != -1 {
+			bendSteps := cellClean[startBrace+1 : endBrace] // Extract "1", "½", "1½" etc.
+			params.BendSteps = bendSteps
+			
+			// Check for release (r after })
+			if strings.Contains(cellClean[endBrace:], "r") {
+				params.BendRelease = true
+			}
+			
+			return TechBend, params
 		}
 	}
 	
