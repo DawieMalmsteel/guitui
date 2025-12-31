@@ -272,6 +272,7 @@ func (p *TabParser) parseCell(stringIdx int, cell string) *Marker {
 		// Extract fret, finger, and technique
 		fret, finger := p.extractFretFinger(cell)
 		technique, params := p.extractTechnique(cell)
+		picking := p.extractPicking(cell)
 
 		// Calculate note
 		openNote := theory.StandardTuning[stringIdx]
@@ -284,14 +285,15 @@ func (p *TabParser) parseCell(stringIdx int, cell string) *Marker {
 			Note:        note,
 			Technique:   technique,
 			TechParams:  params,
+			Picking:     picking,
 		}
 	}
 
 	return nil
 }
 
-// extractFretFinger parses fret number and optional finger from cell string
-// Supports: "5", "5(f1)", "12(f3)"
+// extractFretFinger parses fret number and optional finger + picking from cell string
+// Supports: "5", "5(f1)", "5(f1:d)", "5(d)", "12(f3:u)"
 func (p *TabParser) extractFretFinger(cell string) (fret, finger int) {
 	fret = 0
 	finger = 0
@@ -316,14 +318,27 @@ func (p *TabParser) extractFretFinger(cell string) (fret, finger int) {
 			closeIdx += i
 			content := cell[i+1 : closeIdx]
 
-			// Parse content: "f1" or just "1" (legacy)
+			// Parse content: "f1:d", "f1", "d", or just "1" (legacy)
 			if len(content) == 1 && content[0] >= '0' && content[0] <= '9' {
 				// Legacy format: (1) means finger 1
 				finger, _ = strconv.Atoi(content)
-			} else if strings.HasPrefix(content, "f") && len(content) > 1 {
-				// Modern format: (f1)
-				finger, _ = strconv.Atoi(content[1:])
+			} else if strings.HasPrefix(content, "f") {
+				// Modern format: (f1) or (f1:d)
+				// Split by : to check for picking
+				if strings.Contains(content, ":") {
+					// Format: (f1:d)
+					parts := strings.Split(content, ":")
+					if len(parts) == 2 {
+						finger, _ = strconv.Atoi(parts[0][1:]) // Skip 'f' prefix
+						// Picking will be parsed separately in extractPicking()
+					}
+				} else {
+					// Format: (f1)
+					finger, _ = strconv.Atoi(content[1:])
+				}
 			}
+			// If no 'f' prefix, check if it's just picking: (d) or (u)
+			// Will be handled in extractPicking()
 		}
 	}
 
@@ -445,6 +460,52 @@ func (p *TabParser) extractTechnique(cell string) (TechniqueType, TechniqueParam
 	}
 	
 	return TechNone, params
+}
+
+// extractPicking parses picking notation from cell string
+// Supports: "5(f1:d)", "5(d)", "7(u)", "3(f2:u)"
+func (p *TabParser) extractPicking(cell string) PickingType {
+	// Find content in parentheses
+	startIdx := strings.Index(cell, "(")
+	endIdx := strings.Index(cell, ")")
+	
+	if startIdx == -1 || endIdx == -1 {
+		return PickNone
+	}
+	
+	content := cell[startIdx+1 : endIdx]
+	
+	// Check if content has picking notation
+	var pickStr string
+	
+	if strings.Contains(content, ":") {
+		// Format: (f1:d) or (f2:u)
+		parts := strings.Split(content, ":")
+		if len(parts) == 2 {
+			pickStr = strings.TrimSpace(parts[1])
+		}
+	} else if !strings.HasPrefix(content, "f") && len(content) > 0 {
+		// Format: (d) or (u) - no finger, just picking
+		pickStr = strings.TrimSpace(content)
+	}
+	
+	// Map picking symbols to types
+	switch pickStr {
+	case "d":
+		return PickDown
+	case "u":
+		return PickUp
+	case "a":
+		return PickAlternate
+	case "t":
+		return PickTremolo
+	case "s":
+		return PickSweep
+	case "e":
+		return PickEconomy
+	default:
+		return PickNone
+	}
 }
 
 // LoadTabDirectory loads all .tab files from a directory

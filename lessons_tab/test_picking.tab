@@ -1,0 +1,27 @@
+TITLE: Picking Test
+BPM: 100
+KEY: C
+CATEGORY: technique
+DIFFICULTY: beginner
+TUNING: EADGBE
+
+e|5(f1:d)|7(f3:u)|3(d)|0(u)|5(f1)|-----|
+B|-----|-------|-----|-----|-------|3(f2:d)|
+G|-----|-------|-----|-----|-------|-----|
+D|-----|-------|-----|-----|-------|-----|
+A|-----|-------|-----|-----|-------|-----|
+E|-----|-------|-----|-----|-------|-----|
+
+NOTES:
+Test picking notation formats:
+
+Beat 1: 5(f1:d) - finger 1, down pick
+Beat 2: 7(f3:u) - finger 3, up pick  
+Beat 3: 3(d) - no finger specified, down pick
+Beat 4: 0(u) - open string, up pick
+Beat 5: 5(f1) - finger 1, no picking specified
+Beat 6: 3(f2:d) - finger 2, down pick on B string
+
+LEGEND:
+d = down pick   u = up pick
+f1 = finger 1   f2 = finger 2
