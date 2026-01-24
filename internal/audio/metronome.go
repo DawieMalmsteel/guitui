@@ -41,16 +41,17 @@ type MetronomePlayer struct {
 	currentBeat  int
 	stopChan     chan struct{}
 	resetChan    chan struct{} // Signal to reset ticker
+	onBeatChan   chan int      // Channel to send beat events to UI
 }
 
 func NewMetronomePlayer(config *MetronomeConfig) (*MetronomePlayer, error) {
 	sampleRate := beep.SampleRate(44100)
-	
+
 	// Initialize speaker only once
 	speakerInitOnce.Do(func() {
 		speakerInitErr = speaker.Init(sampleRate, sampleRate.N(time.Second/10))
 	})
-	
+
 	if speakerInitErr != nil {
 		return nil, fmt.Errorf("khởi tạo speaker: %w", speakerInitErr)
 	}
@@ -63,6 +64,7 @@ func NewMetronomePlayer(config *MetronomeConfig) (*MetronomePlayer, error) {
 		currentBeat:  0,
 		stopChan:     make(chan struct{}),
 		resetChan:    make(chan struct{}),
+		onBeatChan:   make(chan int, 1), // Buffered channel for beat events
 	}
 
 	go metronome.run()
@@ -87,7 +89,7 @@ func (m *MetronomePlayer) createSound(isAccent bool) beep.Streamer {
 func (m *MetronomePlayer) createWoodBlock(isAccent bool) beep.Streamer {
 	var baseFreq, harmonicFreq float64
 	var attackDuration, decayDuration time.Duration
-	
+
 	if isAccent {
 		baseFreq = 1800.0
 		harmonicFreq = 3600.0
@@ -102,7 +104,7 @@ func (m *MetronomePlayer) createWoodBlock(isAccent bool) beep.Streamer {
 
 	baseTone, err1 := generators.SineTone(m.sampleRate, baseFreq)
 	harmonicTone, err2 := generators.SineTone(m.sampleRate, harmonicFreq)
-	
+
 	if err1 != nil || err2 != nil {
 		return beep.Silence(0)
 	}
@@ -111,16 +113,16 @@ func (m *MetronomePlayer) createWoodBlock(isAccent bool) beep.Streamer {
 
 	totalDuration := attackDuration + decayDuration
 	enveloped := &envelopeStreamer{
-		Streamer:       mixed,
-		sampleRate:     m.sampleRate,
-		attackSamples:  m.sampleRate.N(attackDuration),
-		decaySamples:   m.sampleRate.N(decayDuration),
-		currentSample:  0,
+		Streamer:      mixed,
+		sampleRate:    m.sampleRate,
+		attackSamples: m.sampleRate.N(attackDuration),
+		decaySamples:  m.sampleRate.N(decayDuration),
+		currentSample: 0,
 	}
 
 	limited := beep.Take(m.sampleRate.N(totalDuration), enveloped)
 	volume := float64(m.config.Volume) / 100.0
-	
+
 	return &volumeStreamer{Streamer: limited, Volume: volume}
 }
 
@@ -128,7 +130,7 @@ func (m *MetronomePlayer) createWoodBlock(isAccent bool) beep.Streamer {
 func (m *MetronomePlayer) createMechanicalClick(isAccent bool) beep.Streamer {
 	var freq float64
 	var duration time.Duration
-	
+
 	if isAccent {
 		freq = 2400.0
 		duration = time.Millisecond * 15
@@ -143,16 +145,16 @@ func (m *MetronomePlayer) createMechanicalClick(isAccent bool) beep.Streamer {
 	}
 
 	enveloped := &envelopeStreamer{
-		Streamer:       tone,
-		sampleRate:     m.sampleRate,
-		attackSamples:  m.sampleRate.N(time.Millisecond * 1),
-		decaySamples:   m.sampleRate.N(duration),
-		currentSample:  0,
+		Streamer:      tone,
+		sampleRate:    m.sampleRate,
+		attackSamples: m.sampleRate.N(time.Millisecond * 1),
+		decaySamples:  m.sampleRate.N(duration),
+		currentSample: 0,
 	}
 
 	limited := beep.Take(m.sampleRate.N(duration), enveloped)
 	volume := float64(m.config.Volume) / 100.0
-	
+
 	return &volumeStreamer{Streamer: limited, Volume: volume}
 }
 
@@ -160,7 +162,7 @@ func (m *MetronomePlayer) createMechanicalClick(isAccent bool) beep.Streamer {
 func (m *MetronomePlayer) createDigitalBeep(isAccent bool) beep.Streamer {
 	var freq float64
 	var duration time.Duration
-	
+
 	if isAccent {
 		freq = 880.0 // A5
 		duration = time.Millisecond * 80
@@ -175,34 +177,34 @@ func (m *MetronomePlayer) createDigitalBeep(isAccent bool) beep.Streamer {
 	}
 
 	enveloped := &envelopeStreamer{
-		Streamer:       tone,
-		sampleRate:     m.sampleRate,
-		attackSamples:  m.sampleRate.N(time.Millisecond * 5),
-		decaySamples:   m.sampleRate.N(time.Millisecond * 20),
-		currentSample:  0,
+		Streamer:      tone,
+		sampleRate:    m.sampleRate,
+		attackSamples: m.sampleRate.N(time.Millisecond * 5),
+		decaySamples:  m.sampleRate.N(time.Millisecond * 20),
+		currentSample: 0,
 	}
 
 	limited := beep.Take(m.sampleRate.N(duration), enveloped)
 	volume := float64(m.config.Volume) / 100.0 * 0.6 // Digital beep is a bit quieter
-	
+
 	return &volumeStreamer{Streamer: limited, Volume: volume}
 }
 
 // envelopeStreamer applies an attack-decay envelope to create a percussive sound
 type envelopeStreamer struct {
 	beep.Streamer
-	sampleRate     beep.SampleRate
-	attackSamples  int
-	decaySamples   int
-	currentSample  int
+	sampleRate    beep.SampleRate
+	attackSamples int
+	decaySamples  int
+	currentSample int
 }
 
 func (e *envelopeStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 	n, ok = e.Streamer.Stream(samples)
-	
+
 	for i := 0; i < n; i++ {
 		var envelope float64
-		
+
 		if e.currentSample < e.attackSamples {
 			// Attack phase: 0 -> 1
 			envelope = float64(e.currentSample) / float64(e.attackSamples)
@@ -213,12 +215,12 @@ func (e *envelopeStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 		} else {
 			envelope = 0
 		}
-		
+
 		samples[i][0] *= envelope
 		samples[i][1] *= envelope
 		e.currentSample++
 	}
-	
+
 	return n, ok
 }
 
@@ -272,13 +274,21 @@ func (m *MetronomePlayer) run() {
 				m.mu.RUnlock()
 				continue
 			}
-			
+
 			beatsPerMeasure := getBeatsPerMeasure(m.config.TimeSignature)
 			isAccent := m.config.AccentFirst && m.currentBeat == 0
+			currentBeat := m.currentBeat
 			m.mu.RUnlock()
 
 			sound := m.createSound(isAccent)
 			speaker.Play(sound)
+
+			// Notify UI about beat (non-blocking)
+			select {
+			case m.onBeatChan <- currentBeat:
+			default:
+				// Channel full, skip this notification
+			}
 
 			m.mu.Lock()
 			m.currentBeat = (m.currentBeat + 1) % beatsPerMeasure
@@ -311,7 +321,7 @@ func (m *MetronomePlayer) SetBPM(bpm int) {
 	m.config.BPM = bpm
 	m.beatDuration = time.Minute / time.Duration(bpm)
 	m.mu.Unlock()
-	
+
 	// Signal to reset ticker with new duration
 	select {
 	case m.resetChan <- struct{}{}:
@@ -355,6 +365,12 @@ func (m *MetronomePlayer) GetTotalBeats() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return getBeatsPerMeasure(m.config.TimeSignature)
+}
+
+// OnBeatChannel returns the channel that receives beat events
+// UI should listen on this channel to sync with metronome
+func (m *MetronomePlayer) OnBeatChannel() <-chan int {
+	return m.onBeatChan
 }
 
 func (m *MetronomePlayer) Close() {

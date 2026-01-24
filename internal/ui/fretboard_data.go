@@ -11,13 +11,26 @@ import (
 type FretboardDataBuilder struct {
 	lesson      *lesson.Lesson
 	currentBeat int
+	currentStep int // Index of current step (derived from currentBeat)
 }
 
 // NewFretboardDataBuilder creates a new builder
 func NewFretboardDataBuilder(l *lesson.Lesson, beat int) *FretboardDataBuilder {
+	// Calculate currentStep from currentBeat
+	currentStep := -1
+	if l != nil {
+		for i, step := range l.Steps {
+			if step.Beat <= beat {
+				currentStep = i
+			} else {
+				break
+			}
+		}
+	}
 	return &FretboardDataBuilder{
 		lesson:      l,
 		currentBeat: beat,
+		currentStep: currentStep,
 	}
 }
 
@@ -33,14 +46,19 @@ func (b *FretboardDataBuilder) BuildActiveItems() []components.ActiveItem {
 	}
 
 	activeItems := []components.ActiveItem{}
-	
+
 	// Find all steps that should be active at current beat
 	// A step is active if: step.Beat <= currentBeat < step.Beat + duration
 	for i, step := range b.lesson.Steps {
 		for _, marker := range step.Markers {
 			stepBeat := step.Beat
-			stepEndBeat := stepBeat + marker.Duration - 1 // Duration includes start beat
-			
+			// Duration defaults to 1 if not specified or 0
+			duration := marker.Duration
+			if duration <= 0 {
+				duration = 1
+			}
+			stepEndBeat := stepBeat + duration - 1 // Duration includes start beat
+
 			// Check if this marker is active at current beat
 			if b.currentBeat >= stepBeat && b.currentBeat <= stepEndBeat {
 				activeItems = append(activeItems, components.ActiveItem{

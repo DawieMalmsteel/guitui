@@ -24,6 +24,11 @@ const (
 
 type TickMsg time.Time
 
+// MetroBeatMsg is sent when metronome plays a beat
+type MetroBeatMsg struct {
+	Beat int // Current beat in measure (0-based from metronome)
+}
+
 // Wrapper cho list item
 type item struct {
 	lesson lesson.Lesson
@@ -42,7 +47,7 @@ type Model struct {
 	currentBeat   int // Current beat number (1-based)
 
 	// UI State
-	list            list.Model
+	list          list.Model
 	tuning        []theory.Note
 	width, height int
 	fretCount     int
@@ -112,15 +117,15 @@ func NewModel() Model {
 	}
 
 	return Model{
-		lessons:         loadedLessons,
-		currentLesson:   firstLesson,
-		list:            l,
-		tuning:          theory.StandardTuning,
-		fretCount:       12,
-		metronomeActive: false,
-		metroPlayer:     metroPlayer,
-		metronomeUIMode: false,
-		metroBPM:        120,
+		lessons:            loadedLessons,
+		currentLesson:      firstLesson,
+		list:               l,
+		tuning:             theory.StandardTuning,
+		fretCount:          12,
+		metronomeActive:    false,
+		metroPlayer:        metroPlayer,
+		metronomeUIMode:    false,
+		metroBPM:           120,
 		metroTimeSignature: audio.TimeSig4_4,
 		metroSoundType:     "wood",
 
@@ -212,7 +217,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.metroPlayer != nil {
 					m.metroPlayer.Play()
 				}
-				cmds = append(cmds, tick(m.metroBPM))
+				// Start listening for metronome beats
+				cmds = append(cmds, listenMetronomeBeat(m.metroPlayer))
 			} else {
 				if m.metroPlayer != nil {
 					m.metroPlayer.Pause()
@@ -350,7 +356,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if totalBeats > 0 {
 				m.currentBeat = (m.currentBeat % totalBeats) + 1 // Loop through beats
 			}
-			cmds = append(cmds, tick(m.metroBPM))
+			// Continue listening for metronome beats
+			cmds = append(cmds, listenMetronomeBeat(m.metroPlayer))
+		}
+
+	case MetroBeatMsg:
+		// Sync UI beat with metronome beat
+		if m.metronomeActive && len(m.currentLesson.Steps) > 0 {
+			totalBeats := m.getTotalBeats()
+			if totalBeats > 0 {
+				m.currentBeat = (m.currentBeat % totalBeats) + 1 // Loop through beats
+			}
+			// Continue listening for next beat
+			cmds = append(cmds, listenMetronomeBeat(m.metroPlayer))
 		}
 	}
 
@@ -367,23 +385,23 @@ func (m Model) View() string {
 	}
 
 	// --- 1. PREPARE FRETBOARD PROPS ---
-	
+
 	// Build fretboard data using optimized builder
-	builder := NewFretboardDataBuilder(&m.currentLesson, m.currentStep)
-	
+	builder := NewFretboardDataBuilder(&m.currentLesson, m.currentBeat)
+
 	var activeItems []components.ActiveItem
 	var upcoming map[string]components.UpcomingItem
 	var scaleSequence map[string]components.SequenceItem
-	
+
 	// Only build what we need based on display modes
 	activeItems = builder.BuildActiveItems()
-	
+
 	if m.showUpcoming {
 		upcoming = builder.BuildUpcomingMarkers(3)
 	} else {
 		upcoming = make(map[string]components.UpcomingItem)
 	}
-	
+
 	if m.showScaleShape || m.showFingers || m.showAll {
 		// Need scale sequence for these modes
 		scaleSequence = builder.BuildScaleSequence()
@@ -426,7 +444,7 @@ func (m Model) View() string {
 		if m.metronomeActive {
 			playStatus = "Pause"
 		}
-		line1 := fmt.Sprintf("[Space] %s  [M] Metro  [H] Fing(%s)  [S] Seq(%s)", 
+		line1 := fmt.Sprintf("[Space] %s  [M] Metro  [H] Fing(%s)  [S] Seq(%s)",
 			playStatus, status(m.showFingers), status(m.showScaleShape))
 		line2 := fmt.Sprintf("[Tab] Note(%s)  [U] Upc(%s)  [F] Fret(%d)  [?] less",
 			status(m.showAll), status(m.showUpcoming), m.fretCount)
@@ -463,7 +481,7 @@ func (m Model) View() string {
 	case audio.TimeSig2_4:
 		totalBeats = 2
 	}
-	
+
 	if m.metronomeUIMode {
 		// Show metronome settings UI
 		metroDisplay = components.RenderMetronomeSettings(m.metroBPM, m.metroTimeSignature, m.metroSoundType, m.metronomeActive)
@@ -479,7 +497,7 @@ func (m Model) View() string {
 	// Info Bar
 	infoBar := lipgloss.NewStyle().
 		Foreground(theory.CatSky).Bold(true).
-		Render(fmt.Sprintf("PLAYING: %s (Step %d/%d)", m.currentLesson.Title, m.currentStep+1, len(m.currentLesson.Steps)))
+		Render(fmt.Sprintf("PLAYING: %s (Beat %d/%d)", m.currentLesson.Title, m.currentBeat, m.getTotalBeats()))
 
 	// Build bottom section (fretboard + metronome bar)
 	bottomSection := lipgloss.JoinVertical(lipgloss.Left,
@@ -493,7 +511,7 @@ func (m Model) View() string {
 	// If metronome settings mode, overlay the settings panel centered
 	if m.metronomeUIMode {
 		// Center the settings panel on screen
-		return lipgloss.Place(m.width, m.height, 
+		return lipgloss.Place(m.width, m.height,
 			lipgloss.Center, lipgloss.Center,
 			metroDisplay)
 	}
@@ -505,6 +523,17 @@ func tick(bpm int) tea.Cmd {
 	return tea.Tick(time.Duration(60000/bpm)*time.Millisecond, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})
+}
+
+// listenMetronomeBeat creates a command that waits for the next metronome beat
+func listenMetronomeBeat(player *audio.MetronomePlayer) tea.Cmd {
+	if player == nil {
+		return nil
+	}
+	return func() tea.Msg {
+		beat := <-player.OnBeatChannel()
+		return MetroBeatMsg{Beat: beat}
+	}
 }
 
 func parseNote(n string) theory.Note {
